@@ -5,17 +5,30 @@ const navigation = [
   { name: "Sites", href: "/dashboard/sites", available: false },
   { name: "Sections", href: "/dashboard/sections", available: true },
   { name: "Categories", href: "/dashboard/categories", available: false },
-  { name: "Jobs", href: "/dashboard/jobs", available: false },
+  { name: "Jobs", href: "/dashboard/jobs", available: true },
   { name: "Runner", href: "/dashboard/runner", available: false },
   { name: "Settings", href: "/dashboard/settings", available: false },
 ] as const;
 
+export interface DashboardRunnerStatus {
+  name: string;
+  state: "Online" | "Offline" | "Disabled";
+}
+
 interface DashboardShellProps {
   activeItem: (typeof navigation)[number]["name"];
   children: React.ReactNode;
+  runner?: DashboardRunnerStatus | null;
 }
 
-export function DashboardShell({ activeItem, children }: DashboardShellProps) {
+export function DashboardShell({ activeItem, children, runner }: DashboardShellProps) {
+  const runnerDot =
+    runner?.state === "Online"
+      ? "bg-emerald-400"
+      : runner?.state === "Disabled"
+        ? "bg-amber-400"
+        : "bg-slate-500";
+
   return (
     <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
       <aside className="border-b border-slate-200 bg-slate-950 text-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:border-slate-800">
@@ -60,8 +73,8 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
 
           <div className="mt-auto hidden border-t border-slate-800 px-6 py-5 lg:block">
             <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="h-2 w-2 rounded-full bg-slate-500" />
-              Runner offline
+              <span className={`h-2 w-2 rounded-full ${runnerDot}`} />
+              {runner ? `${runner.name}: ${runner.state.toLowerCase()}` : "Runner unavailable"}
             </div>
           </div>
         </div>

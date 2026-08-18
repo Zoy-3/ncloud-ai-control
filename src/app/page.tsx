@@ -1,35 +1,67 @@
-import { DashboardShell } from "@/components/dashboard-shell";
+import {
+  DashboardShell,
+  type DashboardRunnerStatus,
+} from "@/components/dashboard-shell";
+import {
+  getDashboardCounts,
+  getPrimaryRunnerStatus,
+} from "@/lib/dashboard/data";
 
-const summaryCards = [
-  {
-    label: "Connected Sites",
-    value: "0",
-    detail: "WordPress websites",
-    accent: "bg-blue-500",
-  },
-  {
-    label: "Saved Sections",
-    value: "4",
-    detail: "Published layouts",
-    accent: "bg-violet-500",
-  },
-  {
-    label: "Pending Jobs",
-    value: "0",
-    detail: "Waiting for a runner",
-    accent: "bg-amber-500",
-  },
-  {
-    label: "AI Runner",
-    value: "Offline",
-    detail: "No runner connected",
-    accent: "bg-slate-400",
-  },
-] as const;
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
+  const developmentMode = process.env.NODE_ENV === "development";
+  const [counts, runner] = developmentMode
+    ? await Promise.all([getDashboardCounts(), getPrimaryRunnerStatus()])
+    : [{ sites: 0, pendingJobs: 0 }, null];
+  const runnerState =
+    runner?.status === "disabled"
+      ? "Disabled"
+      : runner?.isOnline
+        ? "Online"
+        : "Offline";
+  const summaryCards = [
+    {
+      label: "Connected Sites",
+      value: String(counts.sites),
+      detail: developmentMode ? "Configured development sites" : "Development only",
+      accent: "bg-blue-500",
+    },
+    {
+      label: "Saved Sections",
+      value: "4",
+      detail: "Published local layouts",
+      accent: "bg-violet-500",
+    },
+    {
+      label: "Pending Jobs",
+      value: String(counts.pendingJobs),
+      detail: "Waiting for the runner",
+      accent: "bg-amber-500",
+    },
+    {
+      label: "AI Runner",
+      value: runner ? runnerState : "Not configured",
+      detail: runner
+        ? `${runner.name}${runner.lastSeenAt ? ` · last seen ${new Date(runner.lastSeenAt).toLocaleString()}` : " · never seen"}`
+        : "Controlled runner unavailable",
+      accent:
+        runnerState === "Online"
+          ? "bg-emerald-500"
+          : runnerState === "Disabled"
+            ? "bg-amber-500"
+            : "bg-slate-400",
+    },
+  ] as const;
+  const shellRunner: DashboardRunnerStatus | null = runner
+    ? {
+        name: runner.name,
+        state: runnerState,
+      }
+    : null;
+
   return (
-    <DashboardShell activeItem="Dashboard">
+    <DashboardShell activeItem="Dashboard" runner={shellRunner}>
       <div className="mx-auto w-full max-w-7xl">
         <div className="mb-8 flex flex-col gap-3 border-b border-slate-200 pb-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
@@ -49,7 +81,9 @@ export default function Home() {
             <h2 id="overview-heading" className="text-lg font-semibold text-slate-900">
               Overview
             </h2>
-            <span className="text-sm text-slate-500">Local development data</span>
+            <span className="text-sm text-slate-500">
+              {developmentMode ? "Live development data" : "Development data hidden"}
+            </span>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -72,10 +106,11 @@ export default function Home() {
         </section>
 
         <section className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/70 p-6">
-          <p className="text-sm font-semibold text-blue-900">Phase one foundation</p>
+          <p className="text-sm font-semibold text-blue-900">Phase two job queue</p>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-800/80">
-            The local sample library is ready for browsing. Site connections, jobs,
-            generation, and runner management remain intentionally inactive in this phase.
+            Supabase-backed jobs and the authenticated local runner are active for
+            controlled development testing. Codex, WordPress, and Flatsome insertion
+            remain intentionally disconnected.
           </p>
         </section>
       </div>

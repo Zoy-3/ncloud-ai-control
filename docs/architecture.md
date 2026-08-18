@@ -1,7 +1,9 @@
 # Future NCloud architecture
 
-This document records the intended direction only. None of the AI routing, job queue,
-remote insertion, or storage behavior described here is implemented in phase one.
+Phase 2 now implements the Supabase job queue, authenticated Control API boundaries, and
+one sequential local runner returning fixed test shortcode. The section router, Codex
+generation, WordPress communication, remote UX Builder insertion, and production section
+storage described below remain future work.
 
 ## Section resolution paths
 
