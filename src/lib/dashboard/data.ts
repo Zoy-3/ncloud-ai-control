@@ -1,6 +1,7 @@
 import "server-only";
 
 import { DEVELOPMENT_RUNNER } from "@/lib/development/constants";
+import { RUNNER_HEARTBEAT_FRESHNESS_MS } from "@/lib/runners/availability";
 import type { JobStatus, JobType, RunnerStatus } from "@/lib/supabase/database.types";
 import { throwDatabaseError } from "@/lib/supabase/errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -140,7 +141,8 @@ export async function getPrimaryRunnerStatus(
     data.last_seen_at === null ? Number.NaN : Date.parse(data.last_seen_at);
   const isFresh =
     Number.isFinite(lastSeenMilliseconds) &&
-    referenceTime.getTime() - lastSeenMilliseconds <= 30_000 &&
+    referenceTime.getTime() - lastSeenMilliseconds <=
+      RUNNER_HEARTBEAT_FRESHNESS_MS &&
     referenceTime.getTime() >= lastSeenMilliseconds;
   const isOnline = data.status !== "disabled" && isFresh;
   const status: RunnerStatus =

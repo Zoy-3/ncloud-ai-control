@@ -50,6 +50,34 @@ The `service_role` name inside the SQL migration refers to Supabase's PostgreSQL
 for elevated database grants. It is not an environment-variable requirement; the
 control app authenticates with `SUPABASE_SECRET_KEY`.
 
+## Production deployment variables
+
+A hosted deployment (Vercel later) needs exactly these variables. Set them in the
+hosting provider's project settings. Never create a committed `.env.production`, and
+never place a real secret in `.env.example`.
+
+Required in production:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY` — server-only; read only through modules that import
+  `server-only`, and never exposed to the browser or returned by an API.
+
+Development only:
+
+- `DEV_API_SECRET` — required when `NODE_ENV=development` and intentionally unset in
+  production. Every `/api/dev/*` route returns 404 outside development, so a hosted
+  deployment needs no development credential.
+
+The plugin-facing production routes are `GET /api/wordpress/status`,
+`GET /api/wordpress/sections`, and `GET /api/wordpress/sections/:id`. All three are
+dynamic, send `Cache-Control: no-store`, and authenticate with the site bearer token.
+No development-only route is part of that flow.
+
+The WordPress plugin calls these routes from its own server, so no browser CORS
+configuration is required. Note that production visibility hides drafts: until sections
+are published, a hosted template listing is correctly empty.
+
 ## Verified Phase 2 schema
 
 The Phase 2 schema is defined in
@@ -115,6 +143,9 @@ deployed on Vercel in this phase.
   raw token exactly once in the response.
 - `GET /api/dev/wordpress/auth-check` proves site bearer authentication works and
   returns only the authenticated site's id, name, domain, and status.
+- `GET /api/wordpress/status` is the plugin's connection check. It works in every
+  environment and returns the authenticated site, the control service state, and an
+  advisory runner state of `online`, `offline`, or `unknown`.
 - `GET /api/wordpress/sections` returns the Supabase-backed template library as metadata
   only, without shortcode.
 - `GET /api/wordpress/sections/:id` returns one template including its stored Flatsome

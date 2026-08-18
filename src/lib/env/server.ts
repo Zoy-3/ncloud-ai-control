@@ -18,13 +18,24 @@ const serverEnvironmentSchema = z.object({
       /^sb_secret_/,
       "SUPABASE_SECRET_KEY must use the new secret-key format.",
     ),
+  // Development-only credential. A hosted deployment runs no development
+  // route, so requiring it there would force a useless secret into production.
   DEV_API_SECRET: z
     .string()
     .trim()
     .min(1, "DEV_API_SECRET is required.")
     .max(512, "DEV_API_SECRET must be at most 512 characters.")
-    .regex(/^\S+$/, "DEV_API_SECRET cannot contain whitespace."),
-});
+    .regex(/^\S+$/, "DEV_API_SECRET cannot contain whitespace.")
+    .optional(),
+}).refine(
+  (environment) =>
+    process.env.NODE_ENV !== "development" ||
+    environment.DEV_API_SECRET !== undefined,
+  {
+    message: "DEV_API_SECRET is required in development.",
+    path: ["DEV_API_SECRET"],
+  },
+);
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
 

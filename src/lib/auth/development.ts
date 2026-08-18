@@ -20,7 +20,13 @@ export function authenticateDevelopmentRequest(request: Request): void {
   const token = request.headers.get("x-dev-api-secret");
   const expected = getServerEnvironment().DEV_API_SECRET;
 
-  if (token === null || token.length > 512 || !tokensEqual(token, expected)) {
+  // Fail closed: an unset development secret authenticates nobody.
+  if (
+    expected === undefined ||
+    token === null ||
+    token.length > 512 ||
+    !tokensEqual(token, expected)
+  ) {
     throw new ApiError(
       401,
       "unauthorized",
