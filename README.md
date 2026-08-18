@@ -109,11 +109,33 @@ deployed on Vercel in this phase.
 - `POST /api/runner/jobs/:id/fail` fails an owned processing job with a readable error.
 - `POST /api/dev/jobs` creates a pending job for the controlled development site.
 - `GET /api/jobs/:id` returns the minimal development job status and result.
+- `POST /api/dev/sites/site-token` generates a new raw site token for one existing site,
+  identified by `{"siteId":"<uuid>"}` or `{"domain":"<exact-domain>"}`. It stores only
+  the SHA-256 hash in `sites.site_token_hash`, writes no other column, and returns the
+  raw token exactly once in the response.
+- `GET /api/dev/wordpress/auth-check` proves site bearer authentication works and
+  returns only the authenticated site's id, name, domain, and status.
 
 Runner routes require `Authorization: Bearer <RUNNER_TOKEN>`. The raw runner token is
 SHA-256 hashed before lookup and is never logged or stored in Supabase. Development job
 creation and status routes require the `x-dev-api-secret` header and deliberately return
 404 outside `NODE_ENV=development`. All Phase 2 API responses disable HTTP caching.
+
+## WordPress site authentication
+
+Future WordPress plugin requests authenticate with `Authorization: Bearer <SITE_TOKEN>`.
+Site tokens use the same convention as runner tokens: 256 random bits encoded as 43
+base64url characters, stored only as a SHA-256 hash. The server hashes the presented
+token, looks up the matching site, and requires `status = active`; the authenticated
+identity always comes from the stored row, so a caller can never assert which site it
+is. A missing header, a non-Bearer scheme, a malformed token, and an unknown token all
+produce the same `401` response, while a disabled site produces `403`.
+
+Raw site tokens exist only in the provisioning response. They are never stored in the
+database, written to a tracked file, logged, or returned by any other route. Both
+routes above return 404 outside `NODE_ENV=development`, and provisioning additionally
+requires the `x-dev-api-secret` header, so there is no unauthenticated way to mint a
+token.
 
 ## Phase 2 validation
 

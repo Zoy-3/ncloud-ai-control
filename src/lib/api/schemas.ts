@@ -6,6 +6,7 @@ export const requestBodyLimits = {
   createJob: 12_000,
   fail: 8_000,
   heartbeat: 1_000,
+  provisionSiteToken: 500,
 } as const;
 
 export const heartbeatBodySchema = z
@@ -38,7 +39,23 @@ export const createDevJobBodySchema = z
   })
   .strict();
 
+// The target site is named explicitly by UUID or exact domain, never inferred.
+export const provisionSiteTokenBodySchema = z.union([
+  z.object({ siteId: z.uuid() }).strict(),
+  z
+    .object({
+      domain: z
+        .string()
+        .trim()
+        .min(1)
+        .max(253)
+        .transform((value) => value.toLowerCase()),
+    })
+    .strict(),
+]);
+
 export type HeartbeatBody = z.infer<typeof heartbeatBodySchema>;
+export type ProvisionSiteTokenBody = z.infer<typeof provisionSiteTokenBodySchema>;
 export type CompleteJobBody = z.infer<typeof completeJobBodySchema>;
 export type FailJobBody = z.infer<typeof failJobBodySchema>;
 export type CreateDevJobBody = z.infer<typeof createDevJobBodySchema>;
