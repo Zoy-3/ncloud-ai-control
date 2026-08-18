@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">Corporate About section preview</title>
+  <desc id="description">A professional two-column website section with an abstract office illustration on the left and company introduction text with a button on the right.</desc>
+  <rect width="1600" height="900" fill="#eef3f8"/>
+  <rect x="54" y="42" width="1492" height="816" rx="28" fill="#ffffff"/>
+
+  <rect x="92" y="77" width="34" height="34" rx="8" fill="#1d4ed8"/>
+  <path d="M102 101V87h7l7 7v7h-5v-6h-5v6z" fill="#ffffff"/>
+  <text x="140" y="101" fill="#14213d" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700">NORTHSTAR</text>
+  <circle cx="1124" cy="93" r="4" fill="#1d4ed8"/>
+  <text x="1140" y="101" fill="#5b6474" font-family="Arial, Helvetica, sans-serif" font-size="17">Services</text>
+  <text x="1241" y="101" fill="#5b6474" font-family="Arial, Helvetica, sans-serif" font-size="17">Insights</text>
+  <text x="1334" y="101" fill="#14213d" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">About</text>
+  <rect x="1411" y="74" width="97" height="38" rx="19" fill="#14213d"/>
+  <text x="1437" y="99" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700">Contact</text>
+  <rect x="92" y="133" width="1416" height="1" fill="#dfe6ef"/>
+
+  <rect x="92" y="174" width="674" height="630" rx="22" fill="#dbe7f4"/>
+  <rect x="126" y="208" width="606" height="562" rx="16" fill="#c9d9ea"/>
+  <circle cx="634" cy="300" r="74" fill="#f3b64d" opacity="0.86"/>
+  <path d="M126 598L295 408L412 530L527 376L732 602V770H126Z" fill="#7d9fbd"/>
+  <path d="M126 674L291 510L386 601L504 462L732 681V770H126Z" fill="#4c739a"/>
+  <rect x="242" y="312" width="310" height="388" rx="5" fill="#f7fafc"/>
+  <rect x="273" y="347" width="54" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="345" y="347" width="54" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="417" y="347" width="54" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="489" y="347" width="32" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="273" y="435" width="54" height="65" rx="3" fill="#c1d6e8"/>
+  <rect x="345" y="435" width="54" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="417" y="435" width="54" height="65" rx="3" fill="#c1d6e8"/>
+  <rect x="489" y="435" width="32" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="273" y="523" width="54" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="345" y="523" width="54" height="65" rx="3" fill="#c1d6e8"/>
+  <rect x="417" y="523" width="54" height="65" rx="3" fill="#8db2d2"/>
+  <rect x="489" y="523" width="32" height="65" rx="3" fill="#c1d6e8"/>
+  <rect x="358" y="616" width="77" height="84" rx="3" fill="#244b73"/>
+  <rect x="150" y="712" width="558" height="30" rx="15" fill="#315a82"/>
+  <rect x="152" y="224" width="145" height="40" rx="20" fill="#ffffff"/>
+  <circle cx="175" cy="244" r="7" fill="#22a06b"/>
+  <text x="190" y="250" fill="#24415f" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700">IMAGE AREA</text>
+
+  <text x="850" y="255" fill="#1d4ed8" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="2.4">ABOUT OUR COMPANY</text>
+  <rect x="850" y="277" width="58" height="4" rx="2" fill="#1d4ed8"/>
+  <text x="850" y="346" fill="#14213d" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="700">Building Better Solutions</text>
+  <text x="850" y="403" fill="#14213d" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="700">for Modern Businesses</text>
+  <text x="850" y="478" fill="#5b6474" font-family="Arial, Helvetica, sans-serif" font-size="21">We help businesses grow through reliable services, smart</text>
+  <text x="850" y="511" fill="#5b6474" font-family="Arial, Helvetica, sans-serif" font-size="21">solutions and a strong commitment to quality.</text>
+  <text x="850" y="571" fill="#5b6474" font-family="Arial, Helvetica, sans-serif" font-size="21">Our experienced team works closely with every client to</text>
+  <text x="850" y="604" fill="#5b6474" font-family="Arial, Helvetica, sans-serif" font-size="21">create practical solutions designed for lasting success.</text>
+  <rect x="850" y="663" width="226" height="62" rx="8" fill="#1d4ed8"/>
+  <text x="881" y="701" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">Learn More About Us</text>
+  <path d="M1043 693h13m-5-5 5 5-5 5" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

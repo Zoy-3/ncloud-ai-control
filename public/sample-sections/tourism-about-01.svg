@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">Tourism About section preview</title>
+  <desc id="description">A warm travel website section with destination copy and a call-to-action on the left and a stylized tropical landscape placeholder on the right.</desc>
+  <rect width="1600" height="900" fill="#f4efe4"/>
+  <rect x="46" y="46" width="1508" height="808" rx="30" fill="#fffdf8"/>
+
+  <circle cx="92" cy="94" r="19" fill="#e46942"/>
+  <path d="M82 101c12-18 23-18 32 0-12-6-23-6-32 0z" fill="#fff6e7"/>
+  <text x="126" y="101" fill="#17483f" font-family="Georgia, Times New Roman, serif" font-size="25" font-weight="700">SERENDIB TRAILS</text>
+  <text x="1072" y="101" fill="#40645d" font-family="Arial, Helvetica, sans-serif" font-size="16">Journeys</text>
+  <text x="1167" y="101" fill="#17483f" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700">Our Story</text>
+  <text x="1271" y="101" fill="#40645d" font-family="Arial, Helvetica, sans-serif" font-size="16">Journal</text>
+  <rect x="1360" y="73" width="147" height="43" rx="21.5" fill="#17483f"/>
+  <text x="1390" y="101" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700">Plan a Journey</text>
+
+  <text x="112" y="249" fill="#e46942" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="2.7">DISCOVER WITH US</text>
+  <path d="M112 270h88" stroke="#e46942" stroke-width="4" stroke-linecap="round"/>
+  <text x="112" y="341" fill="#17483f" font-family="Georgia, Times New Roman, serif" font-size="51" font-weight="700">Experience the Beauty,</text>
+  <text x="112" y="400" fill="#17483f" font-family="Georgia, Times New Roman, serif" font-size="51" font-weight="700">Culture and Adventure</text>
+  <text x="112" y="459" fill="#17483f" font-family="Georgia, Times New Roman, serif" font-size="51" font-weight="700">of Sri Lanka</text>
+  <text x="112" y="526" fill="#55706a" font-family="Arial, Helvetica, sans-serif" font-size="20">We create memorable journeys that connect travellers with</text>
+  <text x="112" y="558" fill="#55706a" font-family="Arial, Helvetica, sans-serif" font-size="20">beautiful places, local experiences and island culture.</text>
+  <text x="112" y="607" fill="#55706a" font-family="Arial, Helvetica, sans-serif" font-size="20">Every escape is carefully planned around our guests.</text>
+  <rect x="112" y="664" width="226" height="62" rx="31" fill="#e46942"/>
+  <text x="144" y="702" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">Discover Our Story</text>
+  <circle cx="310" cy="695" r="14" fill="#fff5e8"/>
+  <path d="M304 695h11m-4-4 4 4-4 4" fill="none" stroke="#e46942" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="794" y="158" width="713" height="628" rx="118" fill="#b9ddd6"/>
+  <circle cx="1322" cy="282" r="80" fill="#ffd173"/>
+  <path d="M794 512L938 378L1059 482L1186 326L1507 558V786H794Z" fill="#6fa79b"/>
+  <path d="M794 595L959 449L1073 544L1235 421L1507 616V786H794Z" fill="#397b6e"/>
+  <path d="M794 630C940 581 1072 588 1189 652C1296 710 1398 708 1507 660V786H794Z" fill="#5eb6bd"/>
+  <path d="M794 694C910 652 1034 652 1168 713C1287 767 1391 755 1507 706V786H794Z" fill="#f4d594"/>
+  <path d="M1118 786c19-106 71-190 159-254-60 75-91 160-94 254z" fill="#fff5df" opacity="0.9"/>
+  <path d="M1370 388c-15 56-12 106 8 151" fill="none" stroke="#73502f" stroke-width="12" stroke-linecap="round"/>
+  <path d="M1364 395c-43-20-73-14-92 18 36-9 67-5 92 12z" fill="#225e4f"/>
+  <path d="M1367 394c37-31 74-33 111-5-42 2-72 13-94 34z" fill="#17483f"/>
+  <path d="M1363 392c-14-45-42-65-83-58 32 18 56 43 71 74z" fill="#2c7865"/>
+  <rect x="832" y="190" width="158" height="42" rx="21" fill="#fffdf8"/>
+  <circle cx="856" cy="211" r="7" fill="#e46942"/>
+  <text x="872" y="217" fill="#17483f" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700">TRAVEL VIEW</text>
+  <rect x="1373" y="720" width="99" height="38" rx="19" fill="#fffdf8" opacity="0.95"/>
+  <text x="1395" y="745" fill="#17483f" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700">SRI LANKA</text>
+</svg>

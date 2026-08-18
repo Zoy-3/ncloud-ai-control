@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title description">
+  <title id="title">Hotel About section preview</title>
+  <desc id="description">A refined hospitality website section with a stylized hotel suite placeholder on the left and welcoming hotel copy with a rooms button on the right.</desc>
+  <rect width="1600" height="900" fill="#1f2724"/>
+  <rect x="42" y="42" width="1516" height="816" rx="8" fill="#f5f0e7"/>
+
+  <path d="M86 101h36M104 83v36" stroke="#b58c4b" stroke-width="2"/>
+  <circle cx="104" cy="101" r="11" fill="#f5f0e7" stroke="#b58c4b" stroke-width="2"/>
+  <text x="137" y="99" fill="#27332f" font-family="Georgia, Times New Roman, serif" font-size="23" letter-spacing="3">THE VERDANT</text>
+  <text x="137" y="119" fill="#8a6b3c" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="5.4">RETREAT</text>
+  <text x="1108" y="103" fill="#5f675f" font-family="Arial, Helvetica, sans-serif" font-size="15">STAY</text>
+  <text x="1180" y="103" fill="#5f675f" font-family="Arial, Helvetica, sans-serif" font-size="15">DINING</text>
+  <text x="1273" y="103" fill="#27332f" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700">OUR STORY</text>
+  <rect x="1391" y="76" width="122" height="42" fill="#27332f"/>
+  <text x="1414" y="103" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700">BOOK A STAY</text>
+  <rect x="85" y="146" width="1428" height="1" fill="#d8d0c3"/>
+
+  <rect x="85" y="181" width="693" height="613" fill="#ded6c8"/>
+  <rect x="113" y="209" width="637" height="557" fill="#c9bca9"/>
+  <rect x="145" y="241" width="284" height="282" fill="#8aa29c"/>
+  <rect x="157" y="253" width="122" height="258" fill="#c4d9d4"/>
+  <rect x="295" y="253" width="122" height="258" fill="#c4d9d4"/>
+  <path d="M157 462L220 383L279 451V511H157Z" fill="#779289"/>
+  <path d="M295 440L350 371L417 457V511H295Z" fill="#6d877f"/>
+  <line x1="287" y1="241" x2="287" y2="523" stroke="#f1eadf" stroke-width="10"/>
+  <rect x="113" y="523" width="637" height="243" fill="#b9a992"/>
+  <rect x="208" y="500" width="438" height="57" rx="8" fill="#7b6752"/>
+  <rect x="178" y="538" width="498" height="151" rx="12" fill="#f8f3eb"/>
+  <rect x="203" y="556" width="215" height="62" rx="8" fill="#dfd5c7"/>
+  <rect x="436" y="556" width="215" height="62" rx="8" fill="#dfd5c7"/>
+  <path d="M178 628h498v61H178z" fill="#e8dfd3"/>
+  <path d="M178 628c124 28 248 28 372 0 42-9 84-9 126 0v31H178z" fill="#d1b37c"/>
+  <rect x="155" y="680" width="544" height="33" rx="5" fill="#6c5a48"/>
+  <rect x="191" y="713" width="18" height="37" fill="#5e4f40"/>
+  <rect x="645" y="713" width="18" height="37" fill="#5e4f40"/>
+  <rect x="618" y="339" width="84" height="170" fill="#6e5a46"/>
+  <path d="M633 339h54l-11-80h-32z" fill="#e8d7b8"/>
+  <circle cx="660" cy="253" r="10" fill="#b58c4b"/>
+  <rect x="137" y="229" width="143" height="40" rx="2" fill="#f5f0e7"/>
+  <text x="157" y="255" fill="#27332f" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="1">SUITE VIEW</text>
+
+  <text x="866" y="252" fill="#9a743b" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="2.8">WELCOME TO OUR RETREAT</text>
+  <line x1="866" y1="274" x2="938" y2="274" stroke="#b58c4b" stroke-width="2"/>
+  <text x="866" y="348" fill="#27332f" font-family="Georgia, Times New Roman, serif" font-size="48">A Peaceful Stay</text>
+  <text x="866" y="405" fill="#27332f" font-family="Georgia, Times New Roman, serif" font-size="48">Designed Around Comfort</text>
+  <text x="866" y="462" fill="#27332f" font-family="Georgia, Times New Roman, serif" font-size="48">and Experience</text>
+  <text x="866" y="531" fill="#66706b" font-family="Arial, Helvetica, sans-serif" font-size="20">Relaxing surroundings, warm hospitality and thoughtful</text>
+  <text x="866" y="563" fill="#66706b" font-family="Arial, Helvetica, sans-serif" font-size="20">accommodation come together for a memorable stay.</text>
+  <text x="866" y="612" fill="#66706b" font-family="Arial, Helvetica, sans-serif" font-size="20">Our team makes every moment feel effortless.</text>
+  <rect x="866" y="668" width="211" height="58" fill="#27332f"/>
+  <text x="899" y="704" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0.4">Explore Our Rooms</text>
+  <path d="M1048 697h13m-5-5 5 5-5 5" fill="none" stroke="#d4b16f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
