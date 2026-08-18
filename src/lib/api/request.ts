@@ -55,11 +55,19 @@ export async function parseJsonBody<T>(
   return parsed.data;
 }
 
-export function parseUuid(value: string): string {
+export function parseUuidParam(value: string, subject: string): string {
   const parsed = z.uuid().safeParse(value);
   if (!parsed.success) {
-    throw new ApiError(400, "validation_error", "Job ID must be a valid UUID.");
+    throw new ApiError(
+      400,
+      "validation_error",
+      `${subject} must be a valid UUID.`,
+    );
   }
 
   return parsed.data;
+}
+
+export function parseUuid(value: string): string {
+  return parseUuidParam(value, "Job ID");
 }

@@ -10,6 +10,7 @@ export type SiteStatus = "active" | "disabled";
 export type RunnerStatus = "online" | "offline" | "disabled";
 export type JobStatus = "pending" | "processing" | "completed" | "failed";
 export type JobType = "generate_section";
+export type SectionStatus = "draft" | "published" | "archived";
 
 export type Database = {
   public: {
@@ -119,6 +120,51 @@ export type Database = {
           created_at?: string;
           started_at?: string | null;
           completed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      // Shape of the existing live table. It predates this repository's
+      // migrations and is described here for type safety only; Phase 2B does
+      // not create, alter, or migrate it.
+      sections: {
+        Row: {
+          id: string;
+          name: string;
+          category: string;
+          section_type: string;
+          style: string | null;
+          shortcode: string;
+          original_prompt: string | null;
+          preview_screenshot_url: string | null;
+          status: SectionStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: string;
+          section_type: string;
+          style?: string | null;
+          shortcode: string;
+          original_prompt?: string | null;
+          preview_screenshot_url?: string | null;
+          status?: SectionStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string;
+          section_type?: string;
+          style?: string | null;
+          shortcode?: string;
+          original_prompt?: string | null;
+          preview_screenshot_url?: string | null;
+          status?: SectionStatus;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

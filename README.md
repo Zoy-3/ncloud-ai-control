@@ -115,6 +115,10 @@ deployed on Vercel in this phase.
   raw token exactly once in the response.
 - `GET /api/dev/wordpress/auth-check` proves site bearer authentication works and
   returns only the authenticated site's id, name, domain, and status.
+- `GET /api/wordpress/sections` returns the Supabase-backed template library as metadata
+  only, without shortcode.
+- `GET /api/wordpress/sections/:id` returns one template including its stored Flatsome
+  shortcode.
 
 Runner routes require `Authorization: Bearer <RUNNER_TOKEN>`. The raw runner token is
 SHA-256 hashed before lookup and is never logged or stored in Supabase. Development job
@@ -149,6 +153,25 @@ The backend tests cover token generation and hashing, strict bearer parsing, req
 contracts and limits, response mapping, no-store responses, and safe runner `.env`
 updates. Live validation must use `npm run dev`, because the temporary development APIs
 are intentionally unavailable under `next start`.
+
+## WordPress template API
+
+`GET /api/wordpress/sections` and `GET /api/wordpress/sections/:id` are the real
+plugin-facing endpoints. They read the existing Supabase `sections` table, require
+`Authorization: Bearer <SITE_TOKEN>`, and disable HTTP caching. Listings return metadata
+only — `id`, `name`, `category`, `sectionType`, `style`, `previewScreenshotUrl`, and
+`status` — so the stored shortcode travels only in a detail response, which the plugin
+requests once the user picks a template.
+
+Visibility follows the environment: development exposes `draft` and `published` records
+so the current unscreenshotted development sections are usable, while every other
+environment exposes `published` only. `archived` is never returned. A section that does
+not exist and a section the environment may not see produce the same `404`, so hidden
+records are never revealed. Phase 2B has no pagination, search, filtering, or
+site-specific saved sections; the reads are bounded instead.
+
+The separate `GET /api/sections` route remains an in-memory sample used by the internal
+dashboard. It is not the WordPress API and does not read Supabase.
 
 ## Sample section library
 
