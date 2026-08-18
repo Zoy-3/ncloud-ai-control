@@ -176,7 +176,7 @@ validation is implemented yet.
 
 ## Architecture documentation
 
-- [Future system and section routing](docs/architecture.md)
+- [Revised architecture, V1 direction, and phase roadmap](docs/architecture.md)
 - [Flatsome schema capture plan](docs/flatsome-schema.md)
 
 ## Remaining Phase 2 limitations
