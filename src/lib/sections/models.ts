@@ -2,24 +2,28 @@ import type { SectionStatus, TableRow } from "@/lib/supabase/database.types";
 
 type SectionRow = TableRow<"sections">;
 
-/** Columns a template card needs. `shortcode` is deliberately absent. */
+/**
+ * Columns a template card needs. `shortcode` and `css_code` are deliberately
+ * absent: a listing describes templates, it never carries their payload.
+ */
 export const sectionMetadataColumns =
   "id, name, category, section_type, style, preview_screenshot_url, status";
 
-export const sectionDetailColumns = `${sectionMetadataColumns}, shortcode`;
+export const sectionDetailColumns = `${sectionMetadataColumns}, shortcode, css_code`;
 
 export type SectionMetadataRow = Pick<
   SectionRow,
   | "id"
   | "name"
   | "category"
-  | "section_type"
   | "style"
+  | "section_type"
   | "preview_screenshot_url"
   | "status"
 >;
 
-export type SectionDetailRow = SectionMetadataRow & Pick<SectionRow, "shortcode">;
+export type SectionDetailRow = SectionMetadataRow &
+  Pick<SectionRow, "shortcode" | "css_code">;
 
 export type SectionMetadataDto = {
   id: string;
@@ -31,8 +35,16 @@ export type SectionMetadataDto = {
   status: SectionStatus;
 };
 
+/**
+ * One template's payload.
+ *
+ * `shortcode` and `cssCode` stay separate fields. The plugin inserts the
+ * shortcode into the UX Block Code editor and offers the CSS as its own copy
+ * action, so the two must never be merged into one string.
+ */
 export type SectionDetailDto = SectionMetadataDto & {
   shortcode: string;
+  cssCode: string | null;
 };
 
 /**
@@ -62,6 +74,26 @@ export function mapSectionMetadata(row: SectionMetadataRow): SectionMetadataDto 
   };
 }
 
+/**
+ * Reduces stored CSS to "present" or "absent".
+ *
+ * A column that has never been written reads as null, but a blank string means
+ * the same thing to a caller. Both map to null so the plugin only has to check
+ * one condition. Present CSS is returned byte for byte, since its own
+ * whitespace is part of the stylesheet.
+ */
+function readCssCode(value: string | null): string | null {
+  if (value === null || value.trim() === "") {
+    return null;
+  }
+
+  return value;
+}
+
 export function mapSectionDetail(row: SectionDetailRow): SectionDetailDto {
-  return { ...mapSectionMetadata(row), shortcode: row.shortcode };
+  return {
+    ...mapSectionMetadata(row),
+    shortcode: row.shortcode,
+    cssCode: readCssCode(row.css_code),
+  };
 }

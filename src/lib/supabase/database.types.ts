@@ -123,9 +123,10 @@ export type Database = {
         };
         Relationships: [];
       };
-      // Shape of the existing live table. It predates this repository's
-      // migrations and is described here for type safety only; Phase 2B does
-      // not create, alter, or migrate it.
+      // The table itself predates this repository's migrations. The only
+      // change this repository makes to it is the additive `css_code` column
+      // in 20260819000000_add_section_css_code.sql. A section's CSS is stored
+      // separately from its shortcode and is null when the section has none.
       sections: {
         Row: {
           id: string;
@@ -134,6 +135,7 @@ export type Database = {
           section_type: string;
           style: string | null;
           shortcode: string;
+          css_code: string | null;
           original_prompt: string | null;
           preview_screenshot_url: string | null;
           status: SectionStatus;
@@ -147,6 +149,7 @@ export type Database = {
           section_type: string;
           style?: string | null;
           shortcode: string;
+          css_code?: string | null;
           original_prompt?: string | null;
           preview_screenshot_url?: string | null;
           status?: SectionStatus;
@@ -160,6 +163,7 @@ export type Database = {
           section_type?: string;
           style?: string | null;
           shortcode?: string;
+          css_code?: string | null;
           original_prompt?: string | null;
           preview_screenshot_url?: string | null;
           status?: SectionStatus;

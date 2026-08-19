@@ -15,7 +15,11 @@ import {
 
 const sectionId = "b987c546-b196-4470-b683-d32813afcf44";
 
-function detailRow(): SectionDetailRow {
+const sectionCss = ".ncloud-about {\n  padding: 40px 0;\n}\n";
+
+function detailRow(
+  overrides: Partial<SectionDetailRow> = {},
+): SectionDetailRow {
   return {
     id: sectionId,
     name: "Corporate About - Basic",
@@ -25,6 +29,8 @@ function detailRow(): SectionDetailRow {
     preview_screenshot_url: null,
     status: "draft",
     shortcode: "[section][row][col span=\"12\"][ux_text][/ux_text][/col][/row][/section]",
+    css_code: null,
+    ...overrides,
   };
 }
 
@@ -40,25 +46,64 @@ test("a database row maps to the WordPress template metadata contract", () => {
   });
 });
 
-test("listing output never carries the stored shortcode", () => {
-  const metadata = mapSectionMetadata(detailRow());
+test("listing output never carries the stored shortcode or CSS", () => {
+  const metadata = mapSectionMetadata(detailRow({ css_code: sectionCss }));
 
   assert.equal(Object.hasOwn(metadata, "shortcode"), false);
+  assert.equal(Object.hasOwn(metadata, "cssCode"), false);
+  assert.equal(Object.hasOwn(metadata, "css_code"), false);
   assert.equal(Object.hasOwn(metadata, "original_prompt"), false);
   assert.equal(Object.hasOwn(metadata, "created_at"), false);
+
+  // The listing query must not even ask the database for the payload columns.
   assert.equal(sectionMetadataColumns.includes("shortcode"), false);
+  assert.equal(sectionMetadataColumns.includes("css_code"), false);
+
+  // Nothing that reaches the wire may contain either payload.
+  const serialized = JSON.stringify(metadata);
+  assert.equal(serialized.includes("[section]"), false);
+  assert.equal(serialized.includes("ncloud-about"), false);
 });
 
-test("detail output adds the shortcode to the same metadata", () => {
-  const row = detailRow();
+test("detail output adds the shortcode and CSS to the same metadata", () => {
+  const row = detailRow({ css_code: sectionCss });
   const detail = mapSectionDetail(row);
 
   assert.equal(detail.shortcode, row.shortcode);
+  assert.equal(detail.cssCode, sectionCss);
   assert.deepEqual(
-    { ...detail, shortcode: undefined },
-    { ...mapSectionMetadata(row), shortcode: undefined },
+    { ...detail, shortcode: undefined, cssCode: undefined },
+    { ...mapSectionMetadata(row), shortcode: undefined, cssCode: undefined },
   );
   assert.equal(sectionDetailColumns.includes("shortcode"), true);
+  assert.equal(sectionDetailColumns.includes("css_code"), true);
+});
+
+test("detail CSS is returned byte for byte, so the stylesheet is unaltered", () => {
+  const css = "  .a{color:red}\n\n  .b{color:blue}\n";
+
+  assert.equal(mapSectionDetail(detailRow({ css_code: css })).cssCode, css);
+});
+
+test("detail reports cssCode as null when a section stores no CSS", () => {
+  // A column never written reads as null; a blank value means the same thing.
+  for (const stored of [null, "", "   ", "\n\t "]) {
+    const detail = mapSectionDetail(detailRow({ css_code: stored }));
+
+    assert.equal(detail.cssCode, null);
+    // The field is always present, so the plugin never has to test for absence.
+    assert.equal(Object.hasOwn(detail, "cssCode"), true);
+    // Missing CSS must never cost the caller its shortcode.
+    assert.equal(detail.shortcode.length > 0, true);
+  }
+});
+
+test("the shortcode and CSS stay separate fields and are never merged", () => {
+  const detail = mapSectionDetail(detailRow({ css_code: sectionCss }));
+
+  assert.equal(detail.shortcode.includes(sectionCss), false);
+  assert.equal(detail.shortcode.includes("ncloud-about"), false);
+  assert.equal(detail.cssCode?.includes("[section]"), false);
 });
 
 test("development shows drafts and published templates but never archived", () => {
