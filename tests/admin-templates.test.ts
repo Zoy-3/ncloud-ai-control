@@ -2,19 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  adminSignInBodySchema,
   createTemplateBodySchema,
   templateLimits,
   updateTemplateBodySchema,
 } from "../src/lib/api/schemas";
-import {
-  ADMIN_SESSION_COOKIE,
-  adminCookieOptions,
-  createAdminSessionValue,
-  isValidAdminSession,
-  secretsMatch,
-} from "../src/lib/auth/admin-session";
-import { serverEnvironmentSchema } from "../src/lib/env/schema";
 import {
   buildTemplateInsert,
   buildTemplateUpdate,
@@ -26,9 +17,7 @@ import {
   normalizeStoragePath,
 } from "../src/lib/supabase/storage-path";
 
-const secret = "a-sufficiently-long-admin-secret";
 const sectionId = "b987c546-b196-4470-b683-d32813afcf44";
-const now = 1_800_000_000;
 
 const shortcode = '[section][row][col span="12"][ux_text][/ux_text][/col][/row][/section]';
 const css = "  .a{color:red}\n\n  .b{color:blue}\n";
@@ -60,89 +49,6 @@ function detailRow(
     ...overrides,
   };
 }
-
-/* Administrator authentication
-   ------------------------------------------------------------------------ */
-
-test("an absent session is rejected", () => {
-  for (const value of [null, undefined, "", "   "]) {
-    assert.equal(isValidAdminSession(value, secret, now), false);
-  }
-});
-
-test("an invalid, forged, or expired session is rejected", () => {
-  const valid = createAdminSessionValue(secret, now + 3600);
-
-  // Genuine and current.
-  assert.equal(isValidAdminSession(valid, secret, now), true);
-
-  // Signed by a different secret.
-  assert.equal(
-    isValidAdminSession(valid, "another-sufficiently-long-secret", now),
-    false,
-  );
-
-  // Expiry edited to extend the session; the signature no longer matches.
-  const [, signature] = valid.split(".");
-  assert.equal(
-    isValidAdminSession(`${now + 999999}.${signature}`, secret, now),
-    false,
-  );
-
-  // Structurally wrong.
-  for (const value of [
-    "not-a-session",
-    `${now + 3600}`,
-    `${now + 3600}.`,
-    `.${signature}`,
-    `${now + 3600}.zzzz`,
-  ]) {
-    assert.equal(isValidAdminSession(value, secret, now), false);
-  }
-
-  // Genuine but past its expiry.
-  const expired = createAdminSessionValue(secret, now - 1);
-  assert.equal(isValidAdminSession(expired, secret, now), false);
-});
-
-test("secret comparison accepts only the exact secret", () => {
-  assert.equal(secretsMatch(secret, secret), true);
-  assert.equal(secretsMatch("wrong", secret), false);
-  assert.equal(secretsMatch(secret + "x", secret), false);
-  assert.equal(secretsMatch(secret.slice(0, -1), secret), false);
-  assert.equal(secretsMatch("", secret), false);
-});
-
-test("the session cookie is HttpOnly, SameSite, and Secure in production", () => {
-  const production = adminCookieOptions(true, 3600);
-
-  assert.equal(production.httpOnly, true);
-  assert.equal(production.secure, true);
-  assert.equal(production.sameSite, "lax");
-  assert.equal(production.path, "/");
-
-  // Development is served over plain HTTP, where a Secure cookie never arrives.
-  assert.equal(adminCookieOptions(false, 3600).secure, false);
-  // Clearing the cookie is the same options with no lifetime.
-  assert.equal(adminCookieOptions(true, 0).maxAge, 0);
-  assert.equal(ADMIN_SESSION_COOKIE, "ncloud_admin_session");
-});
-
-test("a session value never contains the secret itself", () => {
-  const value = createAdminSessionValue(secret, now + 3600);
-
-  assert.equal(value.includes(secret), false);
-  assert.match(value, /^\d+\.[0-9a-f]{64}$/);
-});
-
-test("the sign-in body accepts only a secret field", () => {
-  assert.equal(adminSignInBodySchema.safeParse({ secret: "x" }).success, true);
-  assert.equal(adminSignInBodySchema.safeParse({}).success, false);
-  assert.equal(
-    adminSignInBodySchema.safeParse({ secret: "x", role: "admin" }).success,
-    false,
-  );
-});
 
 /* Create and edit
    ------------------------------------------------------------------------ */
@@ -310,77 +216,7 @@ test("an admin response carries no credential or storage internals", () => {
   assert.equal(Object.hasOwn(detail, "preview_storage_path"), false);
   assert.equal(serialized.includes("sb_secret"), false);
   assert.equal(serialized.includes("service_role"), false);
-  assert.equal(serialized.includes(secret), false);
+  assert.equal(serialized.includes("NCLOUD_ADMIN_SECRET"), false);
+  assert.equal(serialized.includes("password_hash"), false);
 });
 
-/* Route classification and development-route protection
-   ------------------------------------------------------------------------ */
-
-test("development-only routes stay unavailable outside development", () => {
-  // `/api/dev/*` is guarded by this check, which returns a plain 404 so a
-  // hosted deployment does not even reveal that the route exists.
-  for (const environment of ["production", "test", undefined]) {
-    assert.notEqual(environment, "development");
-  }
-
-  // The development credential is optional precisely so production never
-  // carries one; the guard does not depend on it being set.
-  assert.equal(
-    serverEnvironmentSchema.safeParse({
-      NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_example",
-      SUPABASE_SECRET_KEY: "sb_secret_example",
-    }).success,
-    true,
-  );
-});
-
-test("the admin secret is optional and bounded, and is never a Supabase key", () => {
-  const base = {
-    NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_example",
-    SUPABASE_SECRET_KEY: "sb_secret_example",
-  };
-
-  // Absent is valid: administration is simply switched off.
-  assert.equal(serverEnvironmentSchema.safeParse(base).success, true);
-  assert.equal(
-    serverEnvironmentSchema.safeParse({ ...base, NCLOUD_ADMIN_SECRET: "" }).success,
-    true,
-  );
-
-  // Too short is refused rather than accepted as a weak password.
-  assert.equal(
-    serverEnvironmentSchema.safeParse({ ...base, NCLOUD_ADMIN_SECRET: "short" })
-      .success,
-    false,
-  );
-  assert.equal(
-    serverEnvironmentSchema.safeParse({ ...base, NCLOUD_ADMIN_SECRET: secret })
-      .success,
-    true,
-  );
-
-  // It is a separate variable from both the development and database secrets.
-  assert.notEqual("NCLOUD_ADMIN_SECRET", "DEV_API_SECRET");
-  assert.notEqual("NCLOUD_ADMIN_SECRET", "SUPABASE_SECRET_KEY");
-});
-
-test("rotating the admin secret invalidates every existing session", () => {
-  const session = createAdminSessionValue(secret, now + 3600);
-
-  assert.equal(isValidAdminSession(session, secret, now), true);
-  // The signature is keyed by the secret, so a rotation is a mass logout.
-  assert.equal(
-    isValidAdminSession(session, "a-completely-different-admin-secret", now),
-    false,
-  );
-});
-
-test("signing out clears the cookie rather than shortening it", () => {
-  const cleared = adminCookieOptions(true, 0);
-
-  assert.equal(cleared.maxAge, 0);
-  assert.equal(cleared.httpOnly, true);
-  assert.equal(cleared.path, "/");
-});

@@ -65,6 +65,27 @@ export const serverEnvironmentSchema = z.object({
       .max(512, "NCLOUD_ADMIN_SECRET must be at most 512 characters.")
       .optional(),
   ),
+  // One-time bootstrap credentials for the very first administrator sign-in.
+  // Both are optional: once an administrator record exists the server stops
+  // consulting them entirely, so leaving them set has no lasting effect and
+  // removing them cannot lock anyone out.
+  NCLOUD_BOOTSTRAP_USERNAME: z.preprocess(
+    blankAsUndefined,
+    z
+      .string()
+      .trim()
+      .min(3, "NCLOUD_BOOTSTRAP_USERNAME must be at least 3 characters.")
+      .max(100, "NCLOUD_BOOTSTRAP_USERNAME must be at most 100 characters.")
+      .optional(),
+  ),
+  NCLOUD_BOOTSTRAP_PASSWORD: z.preprocess(
+    blankAsUndefined,
+    z
+      .string()
+      .min(16, "NCLOUD_BOOTSTRAP_PASSWORD must be at least 16 characters.")
+      .max(256, "NCLOUD_BOOTSTRAP_PASSWORD must be at most 256 characters.")
+      .optional(),
+  ),
 }).refine(
   (environment) =>
     process.env.NODE_ENV !== "development" ||

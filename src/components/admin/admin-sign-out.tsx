@@ -1,20 +1,27 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 /**
  * Ends the administrator session.
  *
- * `DELETE /api/admin/session` clears the HttpOnly cookie server-side; the page
- * then reloads, and the server-rendered gate shows the sign-in form again.
+ * One logout for the whole application: Template Manager no longer has an
+ * authentication system of its own. The cookie is cleared server-side, then
+ * `refresh()` re-runs the server components so the new signed-out state is what
+ * renders.
  */
 export function AdminSignOut() {
+  const router = useRouter();
+
   async function signOut() {
     try {
-      await fetch("/api/admin/session", {
+      await fetch("/api/auth/logout", {
         method: "DELETE",
         credentials: "same-origin",
       });
     } finally {
-      window.location.reload();
+      router.replace("/login");
+      router.refresh();
     }
   }
 

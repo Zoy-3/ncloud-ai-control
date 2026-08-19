@@ -6,33 +6,41 @@ export const ADMIN_SESSION_COOKIE = "ncloud_admin_session";
 /** How long one admin session stays valid. */
 export const ADMIN_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
 
+/** The identity a valid session carries. */
+export type AdminSessionClaims = {
+  userId: string;
+  expiresAt: number;
+};
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+function sign(secret: string, payload: string): string {
+  return createHmac("sha256", secret).update(payload).digest("hex");
+}
+
 /**
  * Mints a session value.
  *
- * The value is `<expiry>.<signature>`, where the signature is an HMAC of the
- * expiry keyed by the admin secret. Nothing secret is stored in the cookie and
- * no server-side session table is needed: a forged or edited expiry fails the
- * signature, and an expired one fails the clock.
- *
- * @param secret   The configured admin secret.
- * @param expiresAt Unix seconds at which the session stops being valid.
+ * The value is `<userId>.<expiry>.<signature>`, signed with the server-side
+ * secret. Nothing secret is stored in the cookie: the signing secret never
+ * leaves the server, and no password or password hash is involved. A forged or
+ * edited payload fails the signature, and a stale one fails the clock, so no
+ * server-side session table is needed.
  */
 export function createAdminSessionValue(
   secret: string,
+  userId: string,
   expiresAt: number,
 ): string {
-  return `${expiresAt}.${signExpiry(secret, expiresAt)}`;
-}
+  const payload = `${userId}.${expiresAt}`;
 
-function signExpiry(secret: string, expiresAt: number): string {
-  return createHmac("sha256", secret).update(String(expiresAt)).digest("hex");
+  return `${payload}.${sign(secret, payload)}`;
 }
 
 /**
- * Compares two strings without leaking their contents through timing.
- *
- * Both sides are hashed first so the comparison is over equal-length buffers
- * regardless of the inputs, which `timingSafeEqual` requires.
+ * Compares a candidate secret with the configured one without leaking the
+ * contents through timing. Both sides are hashed first so the comparison is
+ * over equal-length buffers, which `timingSafeEqual` requires.
  */
 export function secretsMatch(actual: string, expected: string): boolean {
   const actualDigest = createHmac("sha256", expected).update(actual).digest();
@@ -44,47 +52,52 @@ export function secretsMatch(actual: string, expected: string): boolean {
 }
 
 /**
- * Whether a cookie value is a session this server issued and that has not
- * expired.
+ * Reads the claims out of a cookie value, or null when it is not a session
+ * this server issued and that is still current.
  *
- * @param value  Raw cookie value, or null when absent.
- * @param secret The configured admin secret.
- * @param now    Unix seconds to compare the expiry against.
+ * The claims alone are not authorisation: the caller must still confirm the
+ * user exists, is active, and is not mid-password-change.
  */
-export function isValidAdminSession(
+export function readAdminSession(
   value: string | null | undefined,
   secret: string,
   now: number,
-): boolean {
+): AdminSessionClaims | null {
   if (typeof value !== "string" || value === "") {
-    return false;
+    return null;
   }
 
-  const separator = value.indexOf(".");
+  const parts = value.split(".");
 
-  if (separator <= 0) {
-    return false;
+  if (parts.length !== 3) {
+    return null;
   }
 
-  const expiryText = value.slice(0, separator);
-  const signature = value.slice(separator + 1);
+  const [userId, expiryText, signature] = parts;
 
-  if (!/^\d{1,15}$/.test(expiryText) || !/^[0-9a-f]{64}$/.test(signature)) {
-    return false;
+  if (
+    !UUID.test(userId) ||
+    !/^\d{1,15}$/.test(expiryText) ||
+    !/^[0-9a-f]{64}$/.test(signature)
+  ) {
+    return null;
   }
 
   const expiresAt = Number(expiryText);
 
   if (!Number.isFinite(expiresAt) || expiresAt <= now) {
-    return false;
+    return null;
   }
 
-  const expected = signExpiry(secret, expiresAt);
+  const expected = sign(secret, `${userId}.${expiryText}`);
 
-  return timingSafeEqual(
-    Buffer.from(signature, "hex"),
-    Buffer.from(expected, "hex"),
-  );
+  if (
+    !timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expected, "hex"))
+  ) {
+    return null;
+  }
+
+  return { userId, expiresAt };
 }
 
 /**

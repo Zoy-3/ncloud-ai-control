@@ -11,6 +11,7 @@ export type RunnerStatus = "online" | "offline" | "disabled";
 export type JobStatus = "pending" | "processing" | "completed" | "failed";
 export type JobType = "generate_section";
 export type SectionStatus = "draft" | "published" | "archived";
+export type AdminUserStatus = "active" | "disabled";
 
 export type Database = {
   public: {
@@ -234,6 +235,69 @@ export type Database = {
         };
         Relationships: [];
       };
+      // NCloud administrator accounts, created by
+      // 20260819004000_admin_users.sql. Only a versioned scrypt hash is
+      // stored; a plaintext password never reaches the database.
+      admin_users: {
+        Row: {
+          id: string;
+          username: string;
+          password_hash: string;
+          must_change_password: boolean;
+          status: AdminUserStatus;
+          created_at: string;
+          updated_at: string;
+          last_login_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          username: string;
+          password_hash: string;
+          must_change_password?: boolean;
+          status?: AdminUserStatus;
+          created_at?: string;
+          updated_at?: string;
+          last_login_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          username?: string;
+          password_hash?: string;
+          must_change_password?: boolean;
+          status?: AdminUserStatus;
+          created_at?: string;
+          updated_at?: string;
+          last_login_at?: string | null;
+        };
+        Relationships: [];
+      };
+      // Shared login throttling, created by
+      // 20260819005000_admin_login_attempts.sql. One row per salted identity
+      // hash; no password, address, or plaintext username is stored.
+      admin_login_attempts: {
+        Row: {
+          identity_hash: string;
+          failure_count: number;
+          window_started_at: string;
+          blocked_until: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          identity_hash: string;
+          failure_count?: number;
+          window_started_at?: string;
+          blocked_until?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          identity_hash?: string;
+          failure_count?: number;
+          window_started_at?: string;
+          blocked_until?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -253,6 +317,23 @@ export type Database = {
           p_result_shortcode: string;
         };
         Returns: boolean;
+      };
+      record_admin_login_failure: {
+        Args: {
+          p_identity_hash: string;
+          p_window_seconds: number;
+          p_max_failures: number;
+          p_block_seconds: number;
+        };
+        Returns: string | null;
+      };
+      admin_login_blocked_until: {
+        Args: { p_identity_hash: string };
+        Returns: string | null;
+      };
+      clear_admin_login_failures: {
+        Args: { p_identity_hash: string };
+        Returns: undefined;
       };
       fail_runner_job: {
         Args: {

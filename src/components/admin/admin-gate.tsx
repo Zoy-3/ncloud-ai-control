@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-import { AdminSignIn } from "@/components/admin/admin-sign-in";
-import { adminManagerEnabled, hasAdminSession } from "@/lib/auth/admin";
+import { AdminSignOut } from "@/components/admin/admin-sign-out";
 
 type AdminGateProps = {
   title: string;
@@ -10,31 +9,27 @@ type AdminGateProps = {
 };
 
 /**
- * Wraps an administrator-only page.
+ * Chrome for an administrator page.
  *
- * The session is checked on the server, so an unauthenticated visitor is never
- * sent the page's contents at all. Signing in re-renders the page that was
- * originally requested, which is why no redirect target has to travel in the
- * URL: there is nothing to redirect to and nothing to tamper with.
+ * Authentication is not decided here: the `/admin` and `/dashboard` layouts
+ * already refuse the request server-side before any of this renders. This only
+ * supplies the shared heading, the way back to the dashboard, and sign-out.
  */
-export async function AdminGate({
-  title,
-  description,
-  children,
-}: AdminGateProps) {
-  const enabled = adminManagerEnabled();
-  const signedIn = enabled && (await hasAdminSession());
-
+export function AdminGate({ title, description, children }: AdminGateProps) {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-6 lg:px-10">
       <div className="mx-auto w-full max-w-5xl">
         <header className="mb-8">
-          <Link
-            href="/"
-            className="text-sm font-medium text-blue-600 hover:text-blue-700"
-          >
-            ← Back to dashboard
-          </Link>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+            >
+              ← Back to dashboard
+            </Link>
+            <AdminSignOut />
+          </div>
+
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
             NCloud
           </p>
@@ -42,22 +37,7 @@ export async function AdminGate({
           <p className="mt-2 text-slate-600">{description}</p>
         </header>
 
-        {!enabled ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-            <h2 className="text-base font-semibold text-amber-900">
-              Administration is switched off
-            </h2>
-            <p className="mt-2 text-sm text-amber-900">
-              Set <code className="font-mono">NCLOUD_ADMIN_SECRET</code> in the
-              server environment and redeploy to enable it. No administration
-              route will operate until it is set.
-            </p>
-          </div>
-        ) : signedIn ? (
-          children
-        ) : (
-          <AdminSignIn />
-        )}
+        {children}
       </div>
     </main>
   );

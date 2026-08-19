@@ -162,63 +162,6 @@ export async function getPrimaryRunnerStatus(
   };
 }
 
-export type ConnectedSiteDto = {
-  id: string;
-  name: string;
-  domain: string;
-  status: SiteStatus;
-  createdAt: string;
-  updatedAt: string;
-  savedSectionCount: number;
-};
-
-/**
- * Connected WordPress sites for the Sites page.
- *
- * Only presentable columns are selected. `site_token_hash` is never read here,
- * so no token material can reach a page even by accident.
- */
-export async function listConnectedSites(): Promise<ConnectedSiteDto[]> {
-  const supabase = getSupabaseServerClient();
-
-  const { data, error } = await supabase
-    .from("sites")
-    .select("id, name, domain, status, created_at, updated_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
-
-  if (error) {
-    throwDatabaseError(error, "Connected sites are temporarily unavailable.");
-  }
-
-  // Real counts of what each site has saved. Nothing here is an invented
-  // usage statistic: it is a plain count of rows that exist.
-  const { data: saved, error: savedError } = await supabase
-    .from("saved_sections")
-    .select("site_id")
-    .limit(1000);
-
-  if (savedError) {
-    throwDatabaseError(savedError, "Connected sites are temporarily unavailable.");
-  }
-
-  const counts = new Map<string, number>();
-
-  for (const row of saved) {
-    counts.set(row.site_id, (counts.get(row.site_id) ?? 0) + 1);
-  }
-
-  return data.map((site) => ({
-    id: site.id,
-    name: site.name,
-    domain: site.domain,
-    status: site.status,
-    createdAt: site.created_at,
-    updatedAt: site.updated_at,
-    savedSectionCount: counts.get(site.id) ?? 0,
-  }));
-}
-
 export type TemplateCategoryDto = {
   name: string;
   total: number;

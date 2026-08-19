@@ -1,15 +1,15 @@
 import Link from "next/link";
 
 const navigation = [
-  { name: "Dashboard", href: "/", available: true },
+  { name: "Dashboard", href: "/dashboard", available: true },
   { name: "Sites", href: "/dashboard/sites", available: true },
   { name: "Sections", href: "/dashboard/sections", available: true },
   { name: "Saved Sections", href: "/dashboard/saved-sections", available: true },
   { name: "Template Manager", href: "/admin/templates", available: true },
   { name: "Categories", href: "/dashboard/categories", available: true },
   { name: "Jobs", href: "/dashboard/jobs", available: true },
-  { name: "Runner", href: "/dashboard/runner", available: false },
-  { name: "Settings", href: "/dashboard/settings", available: false },
+  { name: "Runner", href: "/dashboard/runner", available: true },
+  { name: "Settings", href: "/dashboard/settings", available: true },
 ] as const;
 
 export interface DashboardRunnerStatus {

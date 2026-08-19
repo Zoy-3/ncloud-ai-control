@@ -410,3 +410,92 @@ in-memory counter would give a false guarantee while providing no real protectio
 across instances. **Distributed rate limiting is a documented future production
 enhancement** and should be added at the edge or with a shared store before
 opening the admin login to the public internet.
+
+## Signing in
+
+The whole application is behind an administrator account. `/login` takes a
+username and password; `/dashboard/*` and `/admin/*` are wrapped by server-side
+layouts that redirect an unauthenticated visitor, so protection never depends on
+anything the browser chooses to run. `/` resolves the session and redirects to
+`/dashboard`, `/login`, or `/change-password` without rendering anything first.
+
+**First setup.** While `admin_users` is empty, `/login` accepts
+`NCLOUD_BOOTSTRAP_USERNAME` and `NCLOUD_BOOTSTRAP_PASSWORD`. A successful match
+creates the account, stores only a hash of that password, marks it
+`must_change_password`, and sends the user to `/change-password`. The moment an
+account exists the bootstrap variables are never consulted again, so a temporary
+password can never become a permanent back door. Until the password is changed,
+every other page redirects back to `/change-password`.
+
+**Passwords** are stored as `scrypt$v1$N,r,p$salt$key` (N=16384, r=8, p=1, random
+16-byte salt, 64-byte key), compared in constant time. Parameters travel with
+each hash so they can be raised later without a migration. Minimum 12
+characters, maximum 128. A plaintext password is never stored, logged, or
+returned.
+
+**Sessions** carry `<userId>.<expiry>.<HMAC>` in an HttpOnly, `SameSite=Lax`
+cookie that is `Secure` in production, valid 8 hours. Every protected request
+re-reads the account, so disabling it takes effect immediately. Changing a
+password issues a fresh cookie. `NCLOUD_ADMIN_SECRET` is now purely the
+**session signing secret** — it is nobody's password, is never sent to the
+browser, and is never stored in the database. Rotating it signs everyone out.
+
+**Login throttling** is shared state in Postgres, not process memory: five
+failures inside fifteen minutes block that identity for fifteen minutes, and a
+success clears it. The identity is the normalized username keyed-hashed with the
+server secret — no plaintext username, no address, nothing reversible. A client
+address is deliberately *not* used: on a serverless platform the only source is a
+forwarded header an attacker can vary freely, so throttling by it would look
+like protection while providing none. The accepted trade-off is that someone who
+knows the username can hold it blocked in fifteen-minute stretches. The counter
+is one row per identity, overwritten in place, with stale rows removed
+opportunistically, so the table cannot grow without bound and no scheduled job is
+needed.
+
+There is no password reset. Recovery is a manual administrative procedure:
+delete the `admin_users` row directly in Supabase and sign in again with the
+bootstrap credentials.
+
+## Connecting a WordPress site
+
+1. **Sites → Add Site** with a name and domain. The new site has no usable token.
+2. **Generate / Rotate Token.** The raw token appears once, in that response
+   only. Copy it — it is never stored, logged, or retrievable again.
+3. In WordPress, **Settings → NCloud AI**: paste the Control API URL and the
+   token, save, then **Test Connection**.
+
+Each site uses its own token; never reuse one across sites. Rotating replaces the
+stored hash, so the previous token stops working immediately and that site is
+disconnected until the new token is saved. Disabling a site keeps everything it
+owns — saved sections, hidden-template preferences, previews — and only makes
+`/api/wordpress/*` fail authentication; enabling it restores access with the same
+token unless it was rotated.
+
+## Environment variables
+
+| Variable | Role |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | client-safe publishable key |
+| `SUPABASE_SECRET_KEY` | server-only database credential |
+| `NCLOUD_ADMIN_SECRET` | **session signing secret** (no longer a password) |
+| `NCLOUD_BOOTSTRAP_USERNAME` | one-time initial administrator username |
+| `NCLOUD_BOOTSTRAP_PASSWORD` | one-time initial temporary password, 16+ chars |
+| `DEV_API_SECRET` | development only; unset in production |
+
+Set the bootstrap password manually in the hosting provider. It is never
+committed, never printed, never returned by an API, and never shown in Settings.
+
+## Migration order
+
+Run in Supabase in this order; each is additive and safely re-runnable:
+
+1. `20260819000000_add_section_css_code.sql`
+2. `20260819001000_saved_sections.sql`
+3. `20260819002000_site_hidden_sections.sql`
+4. `20260819003000_section_preview_storage_path.sql`
+5. `20260819004000_admin_users.sql`
+6. `20260819005000_admin_login_attempts.sql`
+
+Migrations first, then deploy. Routes that select new columns return
+`503 database_unavailable` until their migration has run.

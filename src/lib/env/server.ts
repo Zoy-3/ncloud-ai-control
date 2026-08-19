@@ -22,6 +22,8 @@ export function getServerEnvironment(): ServerEnvironment {
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
     DEV_API_SECRET: process.env.DEV_API_SECRET,
     NCLOUD_ADMIN_SECRET: process.env.NCLOUD_ADMIN_SECRET,
+    NCLOUD_BOOTSTRAP_USERNAME: process.env.NCLOUD_BOOTSTRAP_USERNAME,
+    NCLOUD_BOOTSTRAP_PASSWORD: process.env.NCLOUD_BOOTSTRAP_PASSWORD,
   });
 
   if (!result.success) {

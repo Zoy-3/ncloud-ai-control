@@ -203,6 +203,12 @@ deliberately separate from `sections`:
 templates. Hiding is site-local: the `sections` row is untouched and no other site
 is affected. WordPress sites can hide but never delete a central template.
 
+`admin_users` holds the NCloud administrator account, storing only a scrypt
+password hash. `admin_login_attempts` is shared login throttling state, keyed by
+a hash of the normalized username. Both follow the same posture as every other
+application table: RLS on with no policy, all privileges revoked from anon and
+authenticated, and access only for service_role.
+
 The Saved Sections dashboard is central NCloud inspection of site-owned
 saved sections. It spans sites by design, which is why it is reachable only
 behind an administrator session and never through a site token; the

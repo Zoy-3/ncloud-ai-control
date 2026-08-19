@@ -5,6 +5,9 @@ export const requestBodyLimits = {
   complete: 510_000,
   createJob: 12_000,
   adminSignIn: 1_000,
+  changePassword: 1_000,
+  createSite: 1_000,
+  siteStatus: 200,
   createSavedSection: 320_000,
   createTemplate: 320_000,
   updateTemplate: 320_000,
@@ -44,7 +47,19 @@ export const sectionStatusSchema = z.enum(["draft", "published", "archived"]);
 
 export const adminSignInBodySchema = z
   .object({
-    secret: z.string().min(1).max(512),
+    username: z.string().trim().min(1).max(100),
+    // Bounded but not otherwise validated: a wrong password must fail the
+    // same way whatever it looks like.
+    password: z.string().min(1).max(256),
+  })
+  .strict();
+
+export const changePasswordBodySchema = z
+  .object({
+    // Absent on the forced first change, where the session is the proof.
+    currentPassword: z.string().min(1).max(256).optional(),
+    newPassword: z.string().min(1).max(256),
+    confirmPassword: z.string().min(1).max(256),
   })
   .strict();
 
@@ -93,7 +108,30 @@ export const updateTemplateBodySchema = z
     message: "At least one field must be supplied.",
   });
 
+export const createSiteBodySchema = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    // Stored lower case, so two sites cannot differ only by capitalisation.
+    domain: z
+      .string()
+      .trim()
+      .min(1)
+      .max(253)
+      .regex(/^[A-Za-z0-9.-]+$/, "Enter a plain domain such as example.com.")
+      .transform((value) => value.toLowerCase()),
+  })
+  .strict();
+
+export const siteStatusBodySchema = z
+  .object({
+    status: z.enum(["active", "disabled"]),
+  })
+  .strict();
+
+export type CreateSiteBody = z.infer<typeof createSiteBodySchema>;
+export type SiteStatusBody = z.infer<typeof siteStatusBodySchema>;
 export type AdminSignInBody = z.infer<typeof adminSignInBodySchema>;
+export type ChangePasswordBody = z.infer<typeof changePasswordBodySchema>;
 export type CreateTemplateBody = z.infer<typeof createTemplateBodySchema>;
 export type UpdateTemplateBody = z.infer<typeof updateTemplateBodySchema>;
 

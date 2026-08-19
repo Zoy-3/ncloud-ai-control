@@ -5,6 +5,9 @@ import { SectionLibrary } from "@/components/section-library";
 import { sampleSections } from "@/data/sample-sections";
 import { siteCategories } from "@/data/site-categories";
 
+// Rendered per request so the administrator session is always checked.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Sections",
   description: "Browse reusable Flatsome UX Builder layouts.",
