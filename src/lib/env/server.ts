@@ -59,6 +59,10 @@ export function getServerEnvironment(): ServerEnvironment {
       .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
       .join("; ");
 
+    // TEMPORARY DIAGNOSTIC: server log only. `issues` holds variable names and
+    // validation messages; environment variable values are never included.
+    console.error("Server environment validation failed", { issues });
+
     throw new Error(`Invalid server environment configuration: ${issues}`);
   }
 
