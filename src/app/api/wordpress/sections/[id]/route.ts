@@ -11,7 +11,7 @@ type SectionRouteContext = {
 };
 
 /**
- * One template, including the stored Flatsome shortcode the plugin will insert
+ * One template, including the stored Flatsome shortcode the plugin inserts
  * into the UX Block Code editor.
  */
 export async function GET(
@@ -19,10 +19,11 @@ export async function GET(
   context: SectionRouteContext,
 ): Promise<Response> {
   return withApiErrorHandling(async () => {
-    await authenticateSite(request);
+    const site = await authenticateSite(request);
     const { id: rawSectionId } = await context.params;
     const section = await getWordPressSection(
       parseUuidParam(rawSectionId, "Section ID"),
+      site.id,
     );
 
     return successResponse({ success: true, section });

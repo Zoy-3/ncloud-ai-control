@@ -18,11 +18,19 @@ import {
 } from "../src/lib/saved-sections/models";
 import {
   createSavedSectionForSite,
+  deleteSavedSectionForSite,
   getSavedSectionForSite,
   listSavedSectionsForSite,
+  setSavedSectionPreviewForSite,
   type SavedSectionsGateway,
 } from "../src/lib/saved-sections/service";
-import { normalizeStoragePath } from "../src/lib/supabase/storage-path";
+import { readPreviewUpload } from "../src/lib/previews/upload";
+import {
+  buildSavedPreviewPath,
+  isSupportedPreviewType,
+  MAX_PREVIEW_BYTES,
+  normalizeStoragePath,
+} from "../src/lib/supabase/storage-path";
 
 const siteA = "5988ae3e-7177-46aa-8198-c15f87e19d28";
 const siteB = "b1f9c0e4-4c53-4f0a-9d2e-0a7c1f5b6d31";
@@ -97,6 +105,34 @@ function gatewayWith(rows: SavedSectionDetailRow[]): SavedSectionsGateway & {
         css_code: row.css_code ?? null,
         preview_storage_path: row.preview_storage_path ?? null,
       });
+    },
+    async deleteForSite(
+      savedSectionId: string,
+      siteId: string,
+    ): Promise<SavedSectionDetailRow | null> {
+      const index = rows.findIndex(
+        (row) => row.id === savedSectionId && row.site_id === siteId,
+      );
+
+      return index === -1 ? null : rows.splice(index, 1)[0];
+    },
+    async setPreviewPath(
+      savedSectionId: string,
+      siteId: string,
+      storagePath: string,
+    ): Promise<SavedSectionDetailRow | null> {
+      const row = rows.find(
+        (candidate) =>
+          candidate.id === savedSectionId && candidate.site_id === siteId,
+      );
+
+      if (!row) {
+        return null;
+      }
+
+      row.preview_storage_path = storagePath;
+
+      return row;
     },
   };
 }
@@ -241,12 +277,33 @@ test("a gateway that ignores scoping still cannot return a foreign row", async (
     async create(row) {
       return detailRow({ site_id: row.site_id });
     },
+    async deleteForSite() {
+      return detailRow({ id: foreignId, site_id: siteB });
+    },
+    async setPreviewPath() {
+      return detailRow({ id: foreignId, site_id: siteB });
+    },
   };
 
   await assert.rejects(
     () => getSavedSectionForSite(leaky, foreignId, siteA, fakePreviewUrl),
     (error: unknown) => error instanceof ApiError && 404 === error.status,
   );
+
+  // The same guard protects the destructive path: a foreign row that slipped
+  // past the query is refused before its preview object is touched.
+  let removed = 0;
+
+  await assert.rejects(
+    () =>
+      deleteSavedSectionForSite(leaky, foreignId, siteA, async () => {
+        removed += 1;
+        return true;
+      }),
+    (error: unknown) => error instanceof ApiError && 404 === error.status,
+  );
+
+  assert.equal(removed, 0, "no Storage object may be removed for a foreign row");
 });
 
 test("create stores the authenticated site as the owner", async () => {
@@ -440,5 +497,270 @@ test("an unsafe storage path never becomes a URL", () => {
   assert.equal(
     normalizeStoragePath("  saved/site/preview.webp  "),
     "saved/site/preview.webp",
+  );
+});
+
+/* Delete
+   ------------------------------------------------------------------------ */
+
+test("a site can delete its own saved section", async () => {
+  const rows = bothSites();
+  const gateway = gatewayWith(rows);
+  const removedPaths: (string | null)[] = [];
+
+  await deleteSavedSectionForSite(gateway, ownedId, siteA, async (path) => {
+    removedPaths.push(path);
+    return true;
+  });
+
+  assert.equal(
+    rows.some((row) => row.id === ownedId),
+    false,
+  );
+  // Nothing else was touched.
+  assert.equal(rows.length, 2);
+  assert.deepEqual(removedPaths, [null]);
+});
+
+test("deleting removes the preview object named by the deleted row", async () => {
+  const storedPath = `saved/${siteA}/${ownedId}/preview.webp`;
+  const gateway = gatewayWith([
+    detailRow({ preview_storage_path: storedPath }),
+  ]);
+  const removedPaths: (string | null)[] = [];
+
+  await deleteSavedSectionForSite(gateway, ownedId, siteA, async (path) => {
+    removedPaths.push(path);
+    return true;
+  });
+
+  // The path comes from the owned row, never from a caller.
+  assert.deepEqual(removedPaths, [storedPath]);
+});
+
+test("a failed preview cleanup still reports the record as deleted", async () => {
+  const gateway = gatewayWith([
+    detailRow({ preview_storage_path: `saved/${siteA}/${ownedId}/p.webp` }),
+  ]);
+
+  // An orphaned image is a smaller problem than a delete that appears to have
+  // failed but did not.
+  await deleteSavedSectionForSite(gateway, ownedId, siteA, async () => false);
+});
+
+test("a site cannot delete another site's saved section", async () => {
+  const rows = bothSites();
+  const gateway = gatewayWith(rows);
+  let removed = 0;
+
+  await assert.rejects(
+    () =>
+      deleteSavedSectionForSite(gateway, foreignId, siteA, async () => {
+        removed += 1;
+        return true;
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ApiError);
+      assert.equal(error.status, 404);
+      assert.equal(error.code, "not_found");
+      return true;
+    },
+  );
+
+  // Site B's row survives and its object is never touched.
+  assert.equal(
+    rows.some((row) => row.id === foreignId),
+    true,
+  );
+  assert.equal(removed, 0);
+});
+
+test("deleting a foreign section is indistinguishable from deleting a missing one", async () => {
+  const gateway = gatewayWith(bothSites());
+  const noop = async () => true;
+
+  const foreign = await deleteSavedSectionForSite(
+    gateway,
+    foreignId,
+    siteA,
+    noop,
+  ).catch((error: unknown) => error);
+  const missing = await deleteSavedSectionForSite(
+    gateway,
+    "3d6f8b21-5a49-4c72-8e13-6b0d9a2f4c85",
+    siteA,
+    noop,
+  ).catch((error: unknown) => error);
+
+  assert.ok(foreign instanceof ApiError);
+  assert.ok(missing instanceof ApiError);
+  assert.equal(foreign.status, missing.status);
+  assert.equal(foreign.code, missing.code);
+  assert.equal(foreign.message, missing.message);
+});
+
+/* Preview upload
+   ------------------------------------------------------------------------ */
+
+/** Minimal stand-in for a browser `File`. */
+function uploadOf(type: string, bytes: number) {
+  return {
+    type,
+    size: bytes,
+    async arrayBuffer() {
+      return new ArrayBuffer(bytes);
+    },
+  };
+}
+
+test("a site can attach a preview to its own saved section", async () => {
+  const gateway = gatewayWith([detailRow()]);
+  const path = buildSavedPreviewPath(siteA, ownedId, "image/webp", "abc123");
+
+  const section = await setSavedSectionPreviewForSite(
+    gateway,
+    ownedId,
+    siteA,
+    path,
+    fakePreviewUrl,
+    async () => true,
+    null,
+  );
+
+  assert.equal(
+    section.previewScreenshotUrl,
+    `https://project.supabase.co/storage/v1/object/public/section-previews/${path}`,
+  );
+});
+
+test("replacing a preview removes the superseded object only", async () => {
+  const gateway = gatewayWith([
+    detailRow({ preview_storage_path: "saved/old/one.webp" }),
+  ]);
+  const removed: (string | null)[] = [];
+  const next = buildSavedPreviewPath(siteA, ownedId, "image/png", "def456");
+
+  await setSavedSectionPreviewForSite(
+    gateway,
+    ownedId,
+    siteA,
+    next,
+    fakePreviewUrl,
+    async (path) => {
+      removed.push(path);
+      return true;
+    },
+    "saved/old/one.webp",
+  );
+
+  assert.deepEqual(removed, ["saved/old/one.webp"]);
+
+  // Re-uploading to the same path must not delete what was just written.
+  const same: (string | null)[] = [];
+  await setSavedSectionPreviewForSite(
+    gateway,
+    ownedId,
+    siteA,
+    next,
+    fakePreviewUrl,
+    async (path) => {
+      same.push(path);
+      return true;
+    },
+    next,
+  );
+
+  assert.deepEqual(same, []);
+});
+
+test("a preview cannot be attached to another site's saved section", async () => {
+  const gateway = gatewayWith(bothSites());
+
+  await assert.rejects(
+    () =>
+      setSavedSectionPreviewForSite(
+        gateway,
+        foreignId,
+        siteA,
+        buildSavedPreviewPath(siteA, foreignId, "image/png", "x"),
+        fakePreviewUrl,
+        async () => true,
+        null,
+      ),
+    (error: unknown) => error instanceof ApiError && 404 === error.status,
+  );
+});
+
+test("a storage path is generated from server values and is always site-scoped", () => {
+  const path = buildSavedPreviewPath(siteA, ownedId, "image/jpeg", "unique1");
+
+  assert.equal(path, `saved/${siteA}/${ownedId}/unique1.jpg`);
+  // A caller can neither traverse out of the folder nor name another site's.
+  assert.equal(normalizeStoragePath(path), path);
+  assert.equal(path.includes(siteB), false);
+  assert.equal(path.startsWith(`saved/${siteA}/`), true);
+});
+
+test("only JPEG, PNG, and WebP are accepted as previews", async () => {
+  for (const type of ["image/jpeg", "image/png", "image/webp"]) {
+    assert.equal(isSupportedPreviewType(type), true);
+
+    const image = await readPreviewUpload(uploadOf(type, 1024));
+    assert.equal(image.contentType, type);
+    assert.equal(image.byteLength, 1024);
+  }
+
+  // SVG is a script-carrying document and the bucket is public for read.
+  for (const type of ["image/svg+xml", "text/html", "application/pdf", "image/gif"]) {
+    assert.equal(isSupportedPreviewType(type), false);
+
+    await assert.rejects(
+      () => readPreviewUpload(uploadOf(type, 1024)),
+      (error: unknown) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(error.status, 415);
+        return true;
+      },
+    );
+  }
+});
+
+test("a preview larger than 5 MB is rejected, by claim and by measurement", async () => {
+  await assert.rejects(
+    () => readPreviewUpload(uploadOf("image/png", MAX_PREVIEW_BYTES + 1)),
+    (error: unknown) => error instanceof ApiError && 413 === error.status,
+  );
+
+  // A file that understates its own size is still measured after reading.
+  await assert.rejects(
+    () =>
+      readPreviewUpload({
+        type: "image/png",
+        size: 10,
+        async arrayBuffer() {
+          return new ArrayBuffer(MAX_PREVIEW_BYTES + 1);
+        },
+      }),
+    (error: unknown) => error instanceof ApiError && 413 === error.status,
+  );
+
+  // Exactly at the limit is allowed.
+  const atLimit = await readPreviewUpload(
+    uploadOf("image/webp", MAX_PREVIEW_BYTES),
+  );
+  assert.equal(atLimit.byteLength, MAX_PREVIEW_BYTES);
+});
+
+test("a missing or empty preview upload is rejected", async () => {
+  for (const value of [null, undefined, "saved/other/x.webp", 42, {}]) {
+    await assert.rejects(
+      () => readPreviewUpload(value),
+      (error: unknown) => error instanceof ApiError && 400 === error.status,
+    );
+  }
+
+  await assert.rejects(
+    () => readPreviewUpload(uploadOf("image/png", 0)),
+    (error: unknown) => error instanceof ApiError && 400 === error.status,
   );
 });

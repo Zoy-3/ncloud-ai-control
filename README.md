@@ -212,6 +212,7 @@ The project keeps two deliberately separate tables, and they must not be merged:
 | --- | --- | --- |
 | `sections` | The central NCloud template library, curated by NCloud. | Shared by every authenticated site, filtered by `status`. |
 | `saved_sections` | A site's own **My Saved** library. | Owned by exactly one site and never visible to another. |
+| `site_hidden_sections` | A site's visibility preference over central templates. | Site-local; hiding never deletes a template or affects another site. |
 
 Keeping them apart means a tenant row can never be reached by a query written against
 the global library, and the two can evolve independently.
@@ -301,3 +302,55 @@ validation is implemented yet.
 - WordPress authentication and communication are not connected.
 - Flatsome UX Builder insertion is not implemented.
 - The internal dashboard and development APIs do not yet have production user auth.
+
+## Central template management
+
+`/admin/templates` is the NCloud-side manager for the shared library. It lists
+every template in every status, creates and edits them, changes status between
+Draft, Published, and Archived, and uploads preview images.
+
+Access is a dedicated administrator boundary. WordPress site tokens are not
+accepted, and Supabase credentials are never used as a password:
+
+- `POST /api/admin/session` takes the secret in a JSON body — never a URL or a
+  query string — compares it in constant time, and returns an **HttpOnly**,
+  `SameSite=Lax` cookie that is `Secure` outside development. The cookie holds a
+  signed expiry, not the secret.
+- `DELETE /api/admin/session` signs out.
+- Every `/api/admin/*` route re-checks the session server-side on each request.
+
+The secret comes from **`NCLOUD_ADMIN_SECRET`** (minimum 16 characters). It is
+optional: while it is unset the manager reports itself switched off and every
+admin route refuses to operate, so an unconfigured deployment exposes nothing.
+A missing secret and a wrong secret fail identically.
+
+## Template visibility and previews
+
+A WordPress site can **hide** a central template from its own library but can
+never delete one. `POST` and `DELETE /api/wordpress/sections/{id}/hide` record
+and remove that preference, scoped to the site resolved from the bearer token.
+`GET /api/wordpress/sections` excludes hidden templates;
+`?includeHidden=1` returns them carrying `hidden: true` so one can be restored.
+
+Preview images live in the public-read `section-previews` bucket. Every write
+and delete goes through this app with the server-side secret key; the browser
+and WordPress never receive Storage credentials. Paths are generated on the
+server — `saved/{site_id}/{saved_section_id}/{uuid}.{ext}` and
+`templates/{section_id}/{uuid}.{ext}` — so a caller can neither name an object
+nor reach another site's. Uploads accept JPEG, PNG, and WebP up to 5 MB; SVG is
+refused because it can carry script and the bucket is world-readable.
+
+`sections.preview_storage_path` is preferred when set, with the older
+`preview_screenshot_url` kept as the fallback for existing records.
+
+## Migration order
+
+Run these in Supabase in this order; each is additive and safely re-runnable:
+
+1. `20260819000000_add_section_css_code.sql`
+2. `20260819001000_saved_sections.sql`
+3. `20260819002000_site_hidden_sections.sql` — requires `sites` and `sections`
+4. `20260819003000_section_preview_storage_path.sql`
+
+Deploy order: run the migrations first, then deploy the app. Routes that select
+new columns return `503 database_unavailable` until their migration has run.

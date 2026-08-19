@@ -199,7 +199,16 @@ deliberately separate from `sections`:
 - `saved_sections` belongs to exactly one site through a `site_id` foreign key and is
   never visible to another site.
 
-`saved_sections` follows the same security posture as the other application tables: row
+`site_hidden_sections` records a per-site visibility preference over central
+templates. Hiding is site-local: the `sections` row is untouched and no other site
+is affected. WordPress sites can hide but never delete a central template.
+
+Central template administration lives at `/admin/templates` behind a dedicated
+administrator session (`NCLOUD_ADMIN_SECRET`, HttpOnly cookie, constant-time
+comparison). Site tokens are never accepted there, and Supabase credentials are
+never used as a password.
+
+`saved_sections` and `site_hidden_sections` follow the same security posture as the other application tables: row
 level security enabled with no policy, all privileges revoked from `anon` and
 `authenticated`, and access granted only to `service_role`, which the Control API uses
 server-side. Preview images live in the public `section-previews` Storage bucket and the

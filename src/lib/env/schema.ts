@@ -51,6 +51,20 @@ export const serverEnvironmentSchema = z.object({
       .regex(/^\S+$/, "DEV_API_SECRET cannot contain whitespace.")
       .optional(),
   ),
+  // Password for the NCloud admin template manager. Optional so a deployment
+  // that does not run the manager needs no secret; every admin route refuses
+  // to operate while it is unset rather than falling open. Deliberately
+  // distinct from DEV_API_SECRET, which is a development-only credential, and
+  // from SUPABASE_SECRET_KEY, which is a database credential and must never be
+  // used as a password.
+  NCLOUD_ADMIN_SECRET: z.preprocess(
+    blankAsUndefined,
+    z
+      .string()
+      .min(16, "NCLOUD_ADMIN_SECRET must be at least 16 characters.")
+      .max(512, "NCLOUD_ADMIN_SECRET must be at most 512 characters.")
+      .optional(),
+  ),
 }).refine(
   (environment) =>
     process.env.NODE_ENV !== "development" ||

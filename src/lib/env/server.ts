@@ -21,6 +21,7 @@ export function getServerEnvironment(): ServerEnvironment {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
     DEV_API_SECRET: process.env.DEV_API_SECRET,
+    NCLOUD_ADMIN_SECRET: process.env.NCLOUD_ADMIN_SECRET,
   });
 
   if (!result.success) {

@@ -7,7 +7,7 @@ type SectionRow = TableRow<"sections">;
  * absent: a listing describes templates, it never carries their payload.
  */
 export const sectionMetadataColumns =
-  "id, name, category, section_type, style, preview_screenshot_url, status";
+  "id, name, category, section_type, style, preview_screenshot_url, preview_storage_path, status";
 
 export const sectionDetailColumns = `${sectionMetadataColumns}, shortcode, css_code`;
 
@@ -19,6 +19,7 @@ export type SectionMetadataRow = Pick<
   | "style"
   | "section_type"
   | "preview_screenshot_url"
+  | "preview_storage_path"
   | "status"
 >;
 
@@ -33,6 +34,8 @@ export type SectionMetadataDto = {
   style: string | null;
   previewScreenshotUrl: string | null;
   status: SectionStatus;
+  /** Whether the requesting site has hidden this template from its own library. */
+  hidden: boolean;
 };
 
 /**
@@ -62,15 +65,43 @@ export function visibleSectionStatuses(
     : ["published"];
 }
 
-export function mapSectionMetadata(row: SectionMetadataRow): SectionMetadataDto {
+/** Builds the public URL for a stored preview path, or null when there is none. */
+export type PreviewUrlResolver = (path: string | null) => string | null;
+
+/**
+ * Resolves a template's preview.
+ *
+ * A Storage object is preferred when one has been uploaded. Records created
+ * before Storage-backed previews existed carry a full URL in
+ * `preview_screenshot_url`, and that remains the fallback, so older templates
+ * keep working untouched.
+ */
+export function readSectionPreviewUrl(
+  row: Pick<
+    SectionMetadataRow,
+    "preview_storage_path" | "preview_screenshot_url"
+  >,
+  resolvePreviewUrl: PreviewUrlResolver,
+): string | null {
+  return (
+    resolvePreviewUrl(row.preview_storage_path) ?? row.preview_screenshot_url
+  );
+}
+
+export function mapSectionMetadata(
+  row: SectionMetadataRow,
+  resolvePreviewUrl: PreviewUrlResolver,
+  hidden: boolean,
+): SectionMetadataDto {
   return {
     id: row.id,
     name: row.name,
     category: row.category,
     sectionType: row.section_type,
     style: row.style,
-    previewScreenshotUrl: row.preview_screenshot_url,
+    previewScreenshotUrl: readSectionPreviewUrl(row, resolvePreviewUrl),
     status: row.status,
+    hidden,
   };
 }
 
@@ -90,10 +121,37 @@ function readCssCode(value: string | null): string | null {
   return value;
 }
 
-export function mapSectionDetail(row: SectionDetailRow): SectionDetailDto {
+export function mapSectionDetail(
+  row: SectionDetailRow,
+  resolvePreviewUrl: PreviewUrlResolver,
+  hidden: boolean,
+): SectionDetailDto {
   return {
-    ...mapSectionMetadata(row),
+    ...mapSectionMetadata(row, resolvePreviewUrl, hidden),
     shortcode: row.shortcode,
     cssCode: readCssCode(row.css_code),
   };
+}
+
+/**
+ * Splits a listing into what the site should see.
+ *
+ * Hiding is a per-site preference, so it is applied here rather than in the
+ * query: the same rows come back for every site and each site's own preference
+ * decides what it sees. `includeHidden` lets the plugin show hidden templates
+ * so one can be restored.
+ */
+export function applyHiddenSections(
+  rows: readonly SectionMetadataRow[],
+  hiddenIds: ReadonlySet<string>,
+  includeHidden: boolean,
+  resolvePreviewUrl: PreviewUrlResolver,
+): SectionMetadataDto[] {
+  const visible = includeHidden
+    ? rows
+    : rows.filter((row) => !hiddenIds.has(row.id));
+
+  return visible.map((row) =>
+    mapSectionMetadata(row, resolvePreviewUrl, hiddenIds.has(row.id)),
+  );
 }

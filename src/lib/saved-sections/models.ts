@@ -119,6 +119,16 @@ export function assertSavedSectionVisible(
 }
 
 /**
+ * The result of removing a saved section.
+ *
+ * `previewStoragePath` comes from the row that was actually deleted, so the
+ * object cleaned up afterwards can only ever be one this site owned.
+ */
+export type DeletedSavedSection = {
+  previewStoragePath: string | null;
+};
+
+/**
  * Builds the row to insert.
  *
  * `site_id` is taken from the authenticated site and from nowhere else, so a

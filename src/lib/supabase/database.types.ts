@@ -123,10 +123,12 @@ export type Database = {
         };
         Relationships: [];
       };
-      // The table itself predates this repository's migrations. The only
-      // change this repository makes to it is the additive `css_code` column
-      // in 20260819000000_add_section_css_code.sql. A section's CSS is stored
-      // separately from its shortcode and is null when the section has none.
+      // The central NCloud template library, shared by every site. The table
+      // predates this repository's migrations; the only changes made here are
+      // additive columns: `css_code` (20260819000000) and
+      // `preview_storage_path` (20260819003000). CSS is stored separately from
+      // the shortcode. `preview_storage_path` is preferred when set, with
+      // `preview_screenshot_url` kept for older records.
       sections: {
         Row: {
           id: string;
@@ -138,6 +140,7 @@ export type Database = {
           css_code: string | null;
           original_prompt: string | null;
           preview_screenshot_url: string | null;
+          preview_storage_path: string | null;
           status: SectionStatus;
           created_at: string;
           updated_at: string;
@@ -152,6 +155,7 @@ export type Database = {
           css_code?: string | null;
           original_prompt?: string | null;
           preview_screenshot_url?: string | null;
+          preview_storage_path?: string | null;
           status?: SectionStatus;
           created_at?: string;
           updated_at?: string;
@@ -166,6 +170,7 @@ export type Database = {
           css_code?: string | null;
           original_prompt?: string | null;
           preview_screenshot_url?: string | null;
+          preview_storage_path?: string | null;
           status?: SectionStatus;
           created_at?: string;
           updated_at?: string;
@@ -205,6 +210,27 @@ export type Database = {
           preview_storage_path?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      // Per-site visibility preference for central templates, created by
+      // 20260819002000_site_hidden_sections.sql. Hiding is site-local: the
+      // sections row is untouched and other sites are unaffected.
+      site_hidden_sections: {
+        Row: {
+          site_id: string;
+          section_id: string;
+          created_at: string;
+        };
+        Insert: {
+          site_id: string;
+          section_id: string;
+          created_at?: string;
+        };
+        Update: {
+          site_id?: string;
+          section_id?: string;
+          created_at?: string;
         };
         Relationships: [];
       };
