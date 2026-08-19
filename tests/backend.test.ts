@@ -10,6 +10,10 @@ import {
   createDevJobBodySchema,
   heartbeatBodySchema,
 } from "../src/lib/api/schemas";
+import {
+  formatServerEnvironmentIssues,
+  serverEnvironmentSchema,
+} from "../src/lib/env/schema";
 import { mapClaimedJob, mapJobStatus } from "../src/lib/jobs/models";
 import {
   generateRunnerToken,
@@ -146,4 +150,112 @@ test("runner env merge preserves other settings and removes duplicate tokens", (
   assert.equal((updated.match(/^RUNNER_TOKEN=/gm) ?? []).length, 1);
   assert.match(updated, /^NCLOUD_API_URL=/m);
   assert.match(updated, /^POLL_INTERVAL_MS=/m);
+});
+
+function supabaseEnvironment(): Record<string, string | undefined> {
+  return {
+    NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_example",
+    SUPABASE_SECRET_KEY: "sb_secret_example",
+  };
+}
+
+// `NODE_ENV` is typed read-only for application code, but the environment rules
+// are keyed on it, so a test has to be able to stand in each mode.
+const mutableProcessEnv = process.env as Record<string, string | undefined>;
+
+function parseEnvironmentAs(
+  nodeEnv: string,
+  overrides: Record<string, string | undefined>,
+) {
+  const previous = mutableProcessEnv.NODE_ENV;
+  mutableProcessEnv.NODE_ENV = nodeEnv;
+
+  try {
+    return serverEnvironmentSchema.safeParse({
+      ...supabaseEnvironment(),
+      ...overrides,
+    });
+  } finally {
+    mutableProcessEnv.NODE_ENV = previous;
+  }
+}
+
+test("development requires DEV_API_SECRET", () => {
+  const result = parseEnvironmentAs("development", {
+    DEV_API_SECRET: undefined,
+  });
+
+  assert.equal(result.success, false);
+  assert.ok(result.error);
+  assert.equal(
+    formatServerEnvironmentIssues(result.error),
+    "DEV_API_SECRET: DEV_API_SECRET is required in development.",
+  );
+});
+
+test("development accepts a valid DEV_API_SECRET", () => {
+  const result = parseEnvironmentAs("development", {
+    DEV_API_SECRET: "fe670a1608e4215493",
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.data?.DEV_API_SECRET, "fe670a1608e4215493");
+});
+
+test("production does not require DEV_API_SECRET", () => {
+  const missing = parseEnvironmentAs("production", {
+    DEV_API_SECRET: undefined,
+  });
+
+  assert.equal(missing.success, true);
+  assert.equal(missing.data?.DEV_API_SECRET, undefined);
+});
+
+test("a declared-but-blank DEV_API_SECRET reads as absent outside development", () => {
+  // Vercel exports a variable that exists with no value as an empty string
+  // rather than omitting it, which previously failed the whole environment.
+  for (const blank of ["", "   "]) {
+    const result = parseEnvironmentAs("production", { DEV_API_SECRET: blank });
+
+    assert.equal(result.success, true);
+    assert.equal(result.data?.DEV_API_SECRET, undefined);
+  }
+});
+
+test("a present DEV_API_SECRET is still held to its format rules", () => {
+  const result = parseEnvironmentAs("development", {
+    DEV_API_SECRET: "has whitespace",
+  });
+
+  assert.equal(result.success, false);
+  assert.ok(result.error);
+  assert.equal(
+    formatServerEnvironmentIssues(result.error),
+    "DEV_API_SECRET: DEV_API_SECRET cannot contain whitespace.",
+  );
+});
+
+test("the Supabase environment rules are unchanged by the development-only fix", () => {
+  assert.equal(
+    parseEnvironmentAs("production", {
+      NEXT_PUBLIC_SUPABASE_URL: "not-a-url",
+    }).success,
+    false,
+  );
+  assert.equal(
+    parseEnvironmentAs("production", {
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "eyJlegacyjwt",
+    }).success,
+    false,
+  );
+  assert.equal(
+    parseEnvironmentAs("production", { SUPABASE_SECRET_KEY: "" }).success,
+    false,
+  );
+  assert.equal(
+    parseEnvironmentAs("production", { SUPABASE_SECRET_KEY: undefined })
+      .success,
+    false,
+  );
 });
