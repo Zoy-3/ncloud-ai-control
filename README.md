@@ -204,6 +204,46 @@ site-specific saved sections; the reads are bounded instead.
 The separate `GET /api/sections` route remains an in-memory sample used by the internal
 dashboard. It is not the WordPress API and does not read Supabase.
 
+## Two section libraries
+
+The project keeps two deliberately separate tables, and they must not be merged:
+
+| Table | Meaning | Visibility |
+| --- | --- | --- |
+| `sections` | The central NCloud template library, curated by NCloud. | Shared by every authenticated site, filtered by `status`. |
+| `saved_sections` | A site's own **My Saved** library. | Owned by exactly one site and never visible to another. |
+
+Keeping them apart means a tenant row can never be reached by a query written against
+the global library, and the two can evolve independently.
+
+## WordPress My Saved API
+
+`GET /api/wordpress/saved-sections`, `GET /api/wordpress/saved-sections/:id`, and
+`POST /api/wordpress/saved-sections` are the plugin-facing endpoints for a site's own
+library. All three use the same `Authorization: Bearer <SITE_TOKEN>` authentication as
+the template API and disable HTTP caching.
+
+Ownership always comes from the bearer token. A request body may not name a site: the
+create schema is `.strict()`, so a body carrying `siteId`, `site_id`, or a preview path
+is rejected rather than ignored. Every read and the insert are filtered by `site_id`,
+and the row a detail read returns is re-checked against the authenticated site before it
+is mapped. A saved section that does not exist and one owned by another site produce the
+same `404`, so another site's records can never be probed for.
+
+Listings are metadata only — `id`, `name`, `previewScreenshotUrl`, `createdAt`, and
+`updatedAt`, newest first — so stored shortcode and CSS travel only in a detail response.
+`site_id` is never part of any response.
+
+`preview_storage_path` holds an object path inside the public `section-previews` Storage
+bucket, never image bytes, and the public URL is built by the Supabase client from the
+configured project URL rather than a hostname written into this repository. A null path
+yields a null `previewScreenshotUrl`. Uploads are a later phase, so a newly created row
+always stores `preview_storage_path = null`.
+
+Stored shortcode and CSS are validated for type, emptiness, and length only. Neither is
+trimmed, sanitised, escaped, or normalised: both are verbatim payloads whose own
+whitespace is meaningful.
+
 ## Sample section library
 
 The library contains one published About layout for each of the four initial website

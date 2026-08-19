@@ -172,6 +172,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      // Per-site "My Saved" library, created by
+      // 20260819001000_saved_sections.sql. Distinct from `sections`: a row here
+      // belongs to exactly one site and is never shared.
+      saved_sections: {
+        Row: {
+          id: string;
+          site_id: string;
+          name: string;
+          shortcode: string;
+          css_code: string | null;
+          preview_storage_path: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          site_id: string;
+          name: string;
+          shortcode: string;
+          css_code?: string | null;
+          preview_storage_path?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          site_id?: string;
+          name?: string;
+          shortcode?: string;
+          css_code?: string | null;
+          preview_storage_path?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

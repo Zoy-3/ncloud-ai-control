@@ -191,3 +191,17 @@ Codex generates new Flatsome layout
 The existing Supabase project and its `sites`, `runners`, `jobs`, and `sections` tables
 must be preserved. Future database work uses new additive migrations only. The original
 migration must never be rerun.
+
+`saved_sections` was added additively for the per-site **My Saved** library. It is
+deliberately separate from `sections`:
+
+- `sections` is the central NCloud template library, shared by every authenticated site.
+- `saved_sections` belongs to exactly one site through a `site_id` foreign key and is
+  never visible to another site.
+
+`saved_sections` follows the same security posture as the other application tables: row
+level security enabled with no policy, all privileges revoked from `anon` and
+`authenticated`, and access granted only to `service_role`, which the Control API uses
+server-side. Preview images live in the public `section-previews` Storage bucket and the
+table stores only the object path; a public bucket makes those image objects fetchable
+by URL, and does not make these rows publicly readable.
