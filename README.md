@@ -354,3 +354,59 @@ Run these in Supabase in this order; each is additive and safely re-runnable:
 
 Deploy order: run the migrations first, then deploy the app. Routes that select
 new columns return `503 database_unavailable` until their migration has run.
+
+## Dashboard navigation
+
+The sidebar reaches every area directly, so no admin URL has to be typed:
+
+Dashboard · Sites · Sections · Saved Sections · Template Manager · Categories ·
+Jobs · Runner · Settings
+
+**Sections** is the shared NCloud library; **Saved Sections** is central inspection
+of site-owned `saved_sections`. The two are never merged. **Template Manager**
+(`/admin/templates`) is the create/edit workspace. Runner and Settings are still
+placeholders.
+
+Administrator pages are wrapped by a server-rendered gate: an unauthenticated
+visitor is never sent the page contents, only the sign-in form. Signing in
+re-renders the page that was originally requested, so no redirect target ever
+travels in a URL. Every admin page carries **Back to dashboard** and **Sign Out**;
+signing out calls `DELETE /api/admin/session`, which clears the HttpOnly cookie.
+
+## Route classification
+
+| Class | Routes | Guard |
+| --- | --- | --- |
+| Public health | `GET /api/health` | none; returns no data about the system |
+| Site authenticated | `/api/wordpress/*` | `Authorization: Bearer <SITE_TOKEN>`, tenant-scoped |
+| Admin authenticated | `/api/admin/*` | `requireAdminSession()` |
+| Development only | `/api/dev/*` | 404 unless `NODE_ENV=development` |
+
+`/api/dev/*` routes call `assertDevelopmentEnvironment()` first, which throws a
+plain 404 outside development, so a hosted deployment does not reveal that they
+exist. `DEV_API_SECRET` is intentionally unset in production and is never
+returned by any route.
+
+## Typography
+
+The UI face is **Inter Tight**, loaded with `next/font/google` (`Inter_Tight`),
+which self-hosts the files, preloads them, and emits `size-adjust` fallback
+metrics so no layout shift occurs. Only the weights in use (400/500/600/700) are
+requested. The family is exposed as `--font-inter-tight` and consumed through the
+existing `--font-sans` token, so there is one global font definition and a
+sensible sans-serif fallback if the face never loads. Code areas — shortcode and
+CSS textareas — remain monospace.
+
+## Request limits and abuse protection
+
+Bounded sizes are enforced from shared constants rather than repeated literals:
+`requestBodyLimits`, `savedSectionLimits`, `templateLimits`, and
+`MAX_PREVIEW_BYTES`. Shortcode ≤ 200,000 characters, CSS ≤ 100,000, preview
+images ≤ 5 MB (checked against the declared size *and* the real byte length),
+sign-in bodies ≤ 1,000 bytes.
+
+No request-rate limiter is implemented. Vercel functions are per-instance, so an
+in-memory counter would give a false guarantee while providing no real protection
+across instances. **Distributed rate limiting is a documented future production
+enhancement** and should be added at the edge or with a shared store before
+opening the admin login to the public internet.

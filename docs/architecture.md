@@ -203,6 +203,11 @@ deliberately separate from `sections`:
 templates. Hiding is site-local: the `sections` row is untouched and no other site
 is affected. WordPress sites can hide but never delete a central template.
 
+The Saved Sections dashboard is central NCloud inspection of site-owned
+saved sections. It spans sites by design, which is why it is reachable only
+behind an administrator session and never through a site token; the
+`/api/wordpress/saved-sections` routes remain strictly tenant-scoped.
+
 Central template administration lives at `/admin/templates` behind a dedicated
 administrator session (`NCLOUD_ADMIN_SECRET`, HttpOnly cookie, constant-time
 comparison). Site tokens are never accepted there, and Supabase credentials are

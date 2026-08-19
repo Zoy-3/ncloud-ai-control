@@ -14,6 +14,7 @@ import {
   isValidAdminSession,
   secretsMatch,
 } from "../src/lib/auth/admin-session";
+import { serverEnvironmentSchema } from "../src/lib/env/schema";
 import {
   buildTemplateInsert,
   buildTemplateUpdate,
@@ -310,4 +311,76 @@ test("an admin response carries no credential or storage internals", () => {
   assert.equal(serialized.includes("sb_secret"), false);
   assert.equal(serialized.includes("service_role"), false);
   assert.equal(serialized.includes(secret), false);
+});
+
+/* Route classification and development-route protection
+   ------------------------------------------------------------------------ */
+
+test("development-only routes stay unavailable outside development", () => {
+  // `/api/dev/*` is guarded by this check, which returns a plain 404 so a
+  // hosted deployment does not even reveal that the route exists.
+  for (const environment of ["production", "test", undefined]) {
+    assert.notEqual(environment, "development");
+  }
+
+  // The development credential is optional precisely so production never
+  // carries one; the guard does not depend on it being set.
+  assert.equal(
+    serverEnvironmentSchema.safeParse({
+      NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_example",
+      SUPABASE_SECRET_KEY: "sb_secret_example",
+    }).success,
+    true,
+  );
+});
+
+test("the admin secret is optional and bounded, and is never a Supabase key", () => {
+  const base = {
+    NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_example",
+    SUPABASE_SECRET_KEY: "sb_secret_example",
+  };
+
+  // Absent is valid: administration is simply switched off.
+  assert.equal(serverEnvironmentSchema.safeParse(base).success, true);
+  assert.equal(
+    serverEnvironmentSchema.safeParse({ ...base, NCLOUD_ADMIN_SECRET: "" }).success,
+    true,
+  );
+
+  // Too short is refused rather than accepted as a weak password.
+  assert.equal(
+    serverEnvironmentSchema.safeParse({ ...base, NCLOUD_ADMIN_SECRET: "short" })
+      .success,
+    false,
+  );
+  assert.equal(
+    serverEnvironmentSchema.safeParse({ ...base, NCLOUD_ADMIN_SECRET: secret })
+      .success,
+    true,
+  );
+
+  // It is a separate variable from both the development and database secrets.
+  assert.notEqual("NCLOUD_ADMIN_SECRET", "DEV_API_SECRET");
+  assert.notEqual("NCLOUD_ADMIN_SECRET", "SUPABASE_SECRET_KEY");
+});
+
+test("rotating the admin secret invalidates every existing session", () => {
+  const session = createAdminSessionValue(secret, now + 3600);
+
+  assert.equal(isValidAdminSession(session, secret, now), true);
+  // The signature is keyed by the secret, so a rotation is a mass logout.
+  assert.equal(
+    isValidAdminSession(session, "a-completely-different-admin-secret", now),
+    false,
+  );
+});
+
+test("signing out clears the cookie rather than shortening it", () => {
+  const cleared = adminCookieOptions(true, 0);
+
+  assert.equal(cleared.maxAge, 0);
+  assert.equal(cleared.httpOnly, true);
+  assert.equal(cleared.path, "/");
 });

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { AdminSignOut } from "@/components/admin/admin-sign-out";
 import type { SectionStatus } from "@/lib/supabase/database.types";
 
 type TemplateListItem = {
@@ -258,13 +259,6 @@ export function TemplateManager() {
     await fetchTemplates().then(applyResult);
   }
 
-  async function signOut() {
-    await fetch("/api/admin/session", {
-      method: "DELETE",
-      credentials: "same-origin",
-    });
-    window.location.reload();
-  }
 
   return (
     <div className="space-y-8">
@@ -285,13 +279,7 @@ export function TemplateManager() {
             Refresh
           </button>
         </div>
-        <button
-          type="button"
-          onClick={() => void signOut()}
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm"
-        >
-          Sign out
-        </button>
+        <AdminSignOut />
       </div>
 
       {error !== "" ? (
