@@ -1,3 +1,18 @@
+/**
+ * DEMO FIXTURE — NOT A PRODUCTION DATA SOURCE.
+ *
+ * Sample Flatsome layouts used by the demo API route.
+ *
+ * These records are sample content for the in-memory `GET /api/sections`
+ * demonstration route only. The real central template library is the Supabase
+ * `sections` table, read through `@/lib/templates/admin-repository`.
+ *
+ * Dashboard → Sections used to render this file, which made it show four
+ * templates that did not exist in the database. It no longer does, and it must
+ * never do so again: any page or API that represents the real library must read
+ * the database.
+ */
+
 import type { Section } from "@/types/section";
 
 export const sampleSections = [

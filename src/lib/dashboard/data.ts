@@ -2,12 +2,7 @@ import "server-only";
 
 import { DEVELOPMENT_RUNNER } from "@/lib/development/constants";
 import { RUNNER_HEARTBEAT_FRESHNESS_MS } from "@/lib/runners/availability";
-import type {
-  JobStatus,
-  JobType,
-  RunnerStatus,
-  SiteStatus,
-} from "@/lib/supabase/database.types";
+import type { JobStatus, JobType, RunnerStatus } from "@/lib/supabase/database.types";
 import { throwDatabaseError } from "@/lib/supabase/errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 

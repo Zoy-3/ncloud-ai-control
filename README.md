@@ -499,3 +499,30 @@ Run in Supabase in this order; each is additive and safely re-runnable:
 
 Migrations first, then deploy. Routes that select new columns return
 `503 database_unavailable` until their migration has run.
+
+## One library, three views
+
+Dashboard → Sections, Template Manager, and the WordPress Templates tab are all
+views of the same `sections` rows. Nothing in the dashboard renders sample data.
+
+| View | Reads | Shows |
+| --- | --- | --- |
+| Dashboard → Sections | `listAdminTemplates()` | every status — it is an administrator view |
+| Template Manager | `listAdminTemplates()` | every status, plus create and edit |
+| WordPress Templates | `listWordPressSections()` | published only, minus that site's hidden ones |
+
+`src/data/sample-sections.ts` and `src/data/site-categories.ts` are **demo
+fixtures**, labelled as such at the top of each file. They belong to the
+in-memory `GET /api/sections` demonstration route and must never again power a
+page that represents the real library — doing so is exactly what made Sections
+display four templates that did not exist in the database.
+
+**Categories** are derived from `sections.category`, never hard-coded. Two
+values are the same category only when they differ by surrounding whitespace or
+letter case; the first spelling encountered is kept and displayed unchanged.
+Names that differ any other way — "Ecommerce" and "E-commerce" — stay separate
+rather than being silently merged. `src/lib/sections/categories.ts` is the single
+place that decides this, shared by the Sections filters, the Template Manager
+dropdown, and the Categories page. Creating a template with a new category makes
+it available everywhere immediately, and to WordPress once a template using it is
+published.
